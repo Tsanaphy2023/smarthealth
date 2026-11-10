@@ -41,6 +41,8 @@ migrate_working_dir/
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+ios/Pods/
+ios/Podfile.lock
 
 # Symbolication related
 app.*.symbols

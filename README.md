@@ -7,6 +7,20 @@
 **ผู้ออกแบบและพัฒนา:** ผู้ช่วยศาสตราจารย์ ดร.ชีวะ ทัศนา (สาขาวิชาฟิสิกส์ คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏรำไพพรรณี)  
 **เอกสารคู่มือวิชาการและปฏิบัติการ (50 หน้า):** [`latex_manual/main.pdf`](latex_manual/main.pdf)
 
+---
+
+## 📲 ดาวน์โหลดติดตั้งแอปพลิเคชัน & รันผ่าน Web App (Downloads & Live Web App)
+
+| แพลตฟอร์ม (Platform) | ลิงก์ดาวน์โหลด / เข้าใช้งาน (Direct Link) | รายละเอียดการติดตั้ง |
+| :--- | :--- | :--- |
+| 🌐 **GitHub Web App (Satellite Dashboard)** | [**เปิดใช้งานแดชบอร์ดพิกัดดาวเทียม GPS**](https://tsanaphy2023.github.io/smarthealth/) | แดชบอร์ดติดตามก้าวเดิน วิ่ง ปั่นจักรยาน และแผนที่ภาพถ่ายดาวเทียม |
+| 📱 **Flutter Mobile Web App (PWA)** | [**เปิดแอปสมาร์ทโฟนบนเว็บ (Flutter Web)**](https://tsanaphy2023.github.io/smarthealth/app/) | รันตัวแอปมือถือผ่านเบราว์เซอร์ได้ทันที (รองรับติดตั้งเป็นไอคอนบน iOS/Android) |
+| 🤖 **Android (.APK • 17 MB)** | [**ดาวน์โหลด `SmartHealthTracker-Android-v1.0.apk`**](downloads/SmartHealthTracker-Android-v1.0.apk) | สำหรับสมาร์ทโฟน Android (ARM64) ดาวน์โหลดและกดติดตั้งได้ทันที |
+| 🍎 **iOS (.IPA • 7.3 MB & Safari Web App)** | [**ดาวน์โหลด `SmartHealthTracker-iOS-v1.0.ipa`**](downloads/SmartHealthTracker-iOS-v1.0.ipa) | ติดตั้งผ่าน Sideloadly / AltStore หรือเปิดลิงก์ Web App บน Safari แล้วกด *Share → Add to Home Screen* |
+| 📘 **คู่มือวิชาการและปฏิบัติการ (PDF)** | [**ดาวน์โหลด `latex_manual/main.pdf` (50 หน้า)**](latex_manual/main.pdf) | ตำราและคู่มือปฏิบัติการฉบับสมบูรณ์พร้อมปก 3D Pixar |
+
+---
+
 แอปพลิเคชันสมาร์ทโฟนสำหรับการตรวจนับก้าว (**Hybrid Step Counting**) และวิเคราะห์การขยับร่างกาย (**Physical Movement, Fall Detection & Satellite Multi-Sport GPS Tracking**) แบบเรียลไทม์ พร้อมการคำนวณชีวสถิติ (แคลอรี, ระยะทาง, เวลาที่มีการเคลื่อนไหว) และวงแหวนแสดงเป้าหมายสุขภาพประจำวัน
 
 พัฒนาด้วย **Flutter (Dart) + Hardware Pedometer + Sensors Plus + Physics-Informed Step Peak Detection Algorithm + Leaflet.js Satellite GPS & SQLite REST API**
