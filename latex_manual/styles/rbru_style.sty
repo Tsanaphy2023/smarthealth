@@ -1,0 +1,333 @@
+\ProvidesPackage{styles/rbru_style}[2026/09/23 RBRU Academic Textbook Style for Smart Health Tracker]
+
+% 1. Page Geometry (A4, Top 1.5 in, Left 1.5 in, Bottom 1.0 in, Right 1.0 in)
+\RequirePackage[a4paper, top=1.5in, left=1.5in, bottom=1.0in, right=1.0in, headheight=24pt, footskip=0.45in]{geometry}
+
+% 2. Math & Physics Packages
+\RequirePackage{amsmath}
+\RequirePackage{amssymb}
+\RequirePackage{amsfonts}
+\RequirePackage{mathtools}
+\RequirePackage{bm}
+
+% 3. Font & Thai Localization
+\RequirePackage{fontspec}
+\defaultfontfeatures{Mapping=tex-text}
+
+\setmainfont[
+    Path = fonts/,
+    Extension = .ttf,
+    Scale = 1.15,
+    BoldFont = {THSarabun Bold},
+    ItalicFont = {THSarabun Italic},
+    BoldItalicFont = {THSarabun BoldItalic}
+]{THSarabun}
+
+\newfontfamily\thaifont[
+    Path = fonts/,
+    Extension = .ttf,
+    Scale = 1.15,
+    BoldFont = {THSarabun Bold},
+    ItalicFont = {THSarabun Italic},
+    BoldItalicFont = {THSarabun BoldItalic}
+]{THSarabun}
+
+\newfontfamily\coverfont[
+    Path = fonts/,
+    Extension = .ttf,
+    UprightFont = {IBMPlexSansThai-Regular},
+    BoldFont = {IBMPlexSansThai-Bold},
+    ItalicFont = {IBMPlexSansThai-Regular},
+    BoldItalicFont = {IBMPlexSansThai-Bold}
+]{IBMPlexSansThai}
+
+\setmonofont[
+    Path = fonts/,
+    Extension = .ttf,
+    Scale = 1.05
+]{THSarabun}
+
+\XeTeXlinebreaklocale "th_TH"
+\XeTeXlinebreakskip = 0pt plus 2pt minus 0.5pt
+\setlength{\emergencystretch}{2.5em}
+
+% 4. Paragraph Indentation (1 Tab = 1.25 cm)
+\RequirePackage{indentfirst}
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{4pt plus 1pt minus 1pt}
+
+% 5. Color Definitions
+\RequirePackage[dvipsnames,table]{xcolor}
+\definecolor{rbruNavy}{HTML}{0D233A}
+\definecolor{rbruSlate}{HTML}{2C3E50}
+\definecolor{rbruGold}{HTML}{C59B27}
+\definecolor{rbruGreen}{HTML}{1B5E20}
+\definecolor{rbruDarkGreen}{HTML}{0D3B16}
+\definecolor{rbruCyan}{HTML}{00838F}
+\definecolor{rbruEmerald}{HTML}{00A86B}
+\definecolor{rbruBlue}{HTML}{0D47A1}
+\definecolor{rbruOrange}{HTML}{E65100}
+\definecolor{rbruCodeBg}{HTML}{F8F9FA}
+\definecolor{rbruCodeBorder}{HTML}{D1D5DB}
+
+% 6. Hyperref & Links
+\RequirePackage{multicol}
+\RequirePackage{enumitem}
+\RequirePackage[hyphens]{url}
+\RequirePackage[hidelinks, unicode, pdfencoding=auto]{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=rbruBlue,
+    citecolor=rbruGreen,
+    urlcolor=rbruNavy
+}
+
+% 7. Graphicx, TikZ & Floats
+\RequirePackage{graphicx}
+\RequirePackage{tikz}
+\usetikzlibrary{shapes,arrows.meta,positioning,shadows,calc,backgrounds}
+\RequirePackage{float}
+\RequirePackage{placeins}
+\RequirePackage{needspace}
+
+% 8. Table Styling (Booktabs, Tabularx)
+\RequirePackage{booktabs}
+\RequirePackage{tabularx}
+\RequirePackage{array}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{Z}{>{\centering\arraybackslash}X}
+
+% 9. Captions (100% Thai Enforcement, No Colon)
+\RequirePackage{caption}
+\DeclareCaptionLabelSeparator{thaisep}{\quad}
+\captionsetup{labelsep=thaisep}
+\captionsetup[table]{
+    position=top,
+    skip=6pt,
+    labelfont={bf,color=rbruNavy},
+    textfont={normalfont},
+    labelsep=thaisep,
+    justification=raggedleft,
+    singlelinecheck=false
+}
+\captionsetup[figure]{
+    position=bottom,
+    skip=8pt,
+    labelfont={bf,color=rbruNavy},
+    textfont={normalfont},
+    labelsep=thaisep,
+    justification=centering
+}
+
+\renewcommand{\contentsname}{สารบัญ}
+\renewcommand{\listtablename}{สารบัญตาราง}
+\renewcommand{\listfigurename}{สารบัญภาพ}
+\renewcommand{\bibname}{บรรณานุกรม}
+\renewcommand{\figurename}{\mbox{ภาพที่}}
+\renewcommand{\tablename}{\mbox{ตารางที่}}
+
+\AtBeginDocument{
+    \gdef\contentsname{สารบัญ}
+    \gdef\listtablename{สารบัญตาราง}
+    \gdef\listfigurename{สารบัญภาพ}
+    \gdef\bibname{บรรณานุกรม}
+    \gdef\figurename{\mbox{ภาพที่}}
+    \gdef\tablename{\mbox{ตารางที่}}
+    \captionsetup[figure]{name={\mbox{ภาพที่}}}
+    \captionsetup[table]{name={\mbox{ตารางที่}}}
+    \renewcommand{\thetable}{\thechapter.\arabic{table}}
+    \renewcommand{\thefigure}{\thechapter.\arabic{figure}}
+}
+
+% 10. Header and Footer (Fancyhdr)
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[RE]{\color{rbruSlate}\small การพัฒนาแอปพลิเคชันเพื่อสุขภาพและการตรวจจับการเคลื่อนไหวร่างกาย}
+\fancyhead[LO]{\color{rbruSlate}\small\leftmark}
+
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[C]{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+}
+
+% 11. tcolorbox Environments
+\RequirePackage[most]{tcolorbox}
+
+% Planbox (Modular Lesson Plan Box)
+\newtcolorbox{planbox}[2][]{
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=rbruNavy,
+    fonttitle=\bfseries\fontsize{11}{14}\selectfont\color{white},
+    coltitle=white,
+    colbacktitle=rbruNavy,
+    title={#2},
+    arc=1.5mm,
+    boxrule=0.8pt,
+    leftrule=3.5mm,
+    top=3pt, bottom=3pt, left=8pt, right=8pt,
+    titlerule=0pt,
+    toptitle=2.5pt, bottomtitle=2.5pt,
+    drop shadow=black!5,
+    before skip=3.5pt,
+    after skip=3.5pt,
+    #1
+}
+
+% Theory Callout Box
+\newtcolorbox{theorybox}[1][]{
+    enhanced,
+    breakable,
+    colback=rbruCyan!4!white,
+    colframe=rbruCyan!85!black,
+    fonttitle=\bfseries\fontsize{11}{13}\selectfont\color{white},
+    coltitle=white,
+    colbacktitle=rbruCyan!90!black,
+    title={ทฤษฎีและหลักการฟิสิกส์เชิงประจักษ์},
+    arc=2mm,
+    boxrule=0.8pt,
+    leftrule=4mm,
+    top=6pt, bottom=6pt, left=8pt, right=8pt,
+    drop shadow=black!5,
+    before skip=6pt, after skip=6pt,
+    #1
+}
+
+% Health Science Callout Box
+\newtcolorbox{healthbox}[1][]{
+    enhanced,
+    breakable,
+    colback=rbruEmerald!4!white,
+    colframe=rbruEmerald!85!black,
+    fonttitle=\bfseries\fontsize{11}{13}\selectfont\color{white},
+    coltitle=white,
+    colbacktitle=rbruEmerald!90!black,
+    title={เวชศาสตร์การออกกำลังกายและชีวกลศาสตร์},
+    arc=2mm,
+    boxrule=0.8pt,
+    leftrule=4mm,
+    top=6pt, bottom=6pt, left=8pt, right=8pt,
+    drop shadow=black!5,
+    before skip=6pt, after skip=6pt,
+    #1
+}
+
+% Code Box
+\newtcolorbox{codebox}[1][]{
+    enhanced,
+    breakable,
+    colback=rbruCodeBg,
+    colframe=rbruSlate!70!black,
+    fonttitle=\bfseries\fontsize{10}{12}\selectfont\color{white},
+    coltitle=white,
+    colbacktitle=rbruSlate!85!black,
+    arc=1.5mm,
+    boxrule=0.7pt,
+    top=4pt, bottom=4pt, left=6pt, right=6pt,
+    drop shadow=black!3,
+    before skip=6pt, after skip=6pt,
+    #1
+}
+
+% Code Listing Settings
+\RequirePackage{listings}
+\lstdefinelanguage{Dart}{
+    keywords={abstract, as, assert, async, await, break, case, catch, class, const, continue, covariant, default, deferred, do, dynamic, else, enum, export, extends, extension, external, factory, false, final, finally, for, Function, get, hide, if, implements, import, in, interface, is, late, library, mixin, new, null, on, operator, part, required, rethrow, return, set, show, static, super, switch, sync, this, throw, true, try, typedef, var, void, while, with, yield},
+    sensitive=true,
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]',
+    morestring=[b]"
+}
+\lstset{
+    basicstyle=\small\ttfamily,
+    backgroundcolor=\color{rbruCodeBg},
+    keywordstyle=\color{rbruBlue}\bfseries,
+    commentstyle=\color{rbruGreen}\itshape,
+    stringstyle=\color{rbruOrange},
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    stepnumber=1,
+    numbersep=8pt,
+    breaklines=true,
+    breakatwhitespace=true,
+    showstringspaces=false,
+    tabsize=2,
+    frame=none
+}
+
+% 12. Chapter Title Formatting (RBRU Academic Banner)
+\RequirePackage{titlesec}
+\newcommand{\chapterlabelname}{บทที่}
+
+\newcommand{\rbruchapterbanner}[1]{%
+    \begin{tcolorbox}[
+        enhanced,
+        width=\textwidth,
+        colback=rbruNavy,
+        interior style={left color=rbruNavy!98!black, right color=rbruNavy!85!rbruSlate},
+        borderline east={4pt}{0pt}{rbruGold},
+        boxrule=0pt,
+        arc=0mm,
+        top=14pt, bottom=14pt, left=16pt, right=16pt
+    ]
+        \raggedleft
+        {\fontsize{34}{40}\selectfont\bfseries\color{white}\mbox{บทที่\ \thechapter}}\par
+        \vspace{6pt}
+        {\color{rbruGold}\rule{0.65\textwidth}{2pt}}\par
+        \vspace{6pt}
+        {\fontsize{20}{26}\selectfont\bfseries\color{white}#1\par}
+    \end{tcolorbox}
+}
+
+\newcommand{\rbruunnumberedchapterbanner}[1]{%
+    \begin{tcolorbox}[
+        enhanced,
+        width=\textwidth,
+        colback=rbruNavy,
+        interior style={left color=rbruNavy!98!black, right color=rbruNavy!85!rbruSlate},
+        borderline east={4pt}{0pt}{rbruGold},
+        boxrule=0pt,
+        arc=0mm,
+        top=14pt, bottom=14pt, left=16pt, right=16pt
+    ]
+        \raggedleft
+        {\fontsize{24}{30}\selectfont\bfseries\color{white}#1\par}
+    \end{tcolorbox}
+}
+
+\titleformat{\chapter}[block]{\normalfont}{}{0pt}{\rbruchapterbanner}
+\titleformat{name=\chapter,numberless}[block]{\normalfont}{}{0pt}{\rbruunnumberedchapterbanner}
+\titlespacing*{\chapter}{0pt}{0pt}{20pt}
+
+% Section and Subsection Formatting (No Colon, Proper Indent)
+\titleformat{\section}
+    {\normalfont\fontsize{15}{18}\selectfont\bfseries\color{rbruNavy}}
+    {\makebox[1.25cm][l]{\thesection}}
+    {0pt}
+    {}
+
+\titleformat{\subsection}
+    {\normalfont\fontsize{13}{16}\selectfont\bfseries\color{rbruSlate}}
+    {\makebox[1.25cm][l]{\thesubsection}}
+    {0pt}
+    {}
+
+\titlespacing*{\section}{0pt}{14pt plus 2pt minus 2pt}{6pt}
+\titlespacing*{\subsection}{1.25cm}{10pt plus 2pt minus 2pt}{4pt}
+
+% Needspace Wrappers to prevent orphan headings
+\let\rbruorigchapter\chapter
+\renewcommand{\chapter}{\global\setlength{\parindent}{1.25cm}\rbruorigchapter}
+
+\let\rbruorigsection\section
+\renewcommand{\section}{\Needspace*{8\baselineskip}\global\setlength{\parindent}{1.25cm}\rbruorigsection}
+
+\let\rbruorigsubsection\subsection
+\renewcommand{\subsection}{\Needspace*{5\baselineskip}\global\setlength{\parindent}{2.50cm}\rbruorigsubsection}

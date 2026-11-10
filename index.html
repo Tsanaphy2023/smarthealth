@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Health Tracker | แดชบอร์ดติดตามก้าวเดิน วิ่ง ปั่นจักรยาน และพิกัดดาวเทียม GPS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-base: #0B0F19;
+            --bg-card: rgba(18, 26, 43, 0.82);
+            --bg-card-hover: rgba(26, 38, 62, 0.95);
+            --border-glow: rgba(0, 245, 155, 0.22);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --primary-neon: #00F59B;
+            --primary-glow: rgba(0, 245, 155, 0.35);
+            --cyan-accent: #00D2FF;
+            --amber-accent: #FFAE00;
+            --coral-alert: #FF4D6D;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', 'Sarabun', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(0, 245, 155, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 85% 80%, rgba(0, 210, 255, 0.07) 0%, transparent 45%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px 20px 48px;
+        }
+
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+        }
+
+        /* Top Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .brand-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-neon), #00A86B);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 0 24px var(--primary-glow);
+        }
+
+        .brand-title h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+        }
+
+        .brand-title p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .badge-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 245, 155, 0.12);
+            color: var(--primary-neon);
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(0, 245, 155, 0.3);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary-neon);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary-neon);
+            animation: pulse 1.8s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.3); }
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .btn-action.primary {
+            background: linear-gradient(135deg, var(--primary-neon), #00C875);
+            color: #07130E;
+            border: none;
+            box-shadow: 0 4px 18px rgba(0, 245, 155, 0.3);
+        }
+
+        .btn-action.primary:hover {
+            box-shadow: 0 6px 24px rgba(0, 245, 155, 0.45);
+        }
+
+        /* Bento Grid Layout */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(0, 245, 155, 0.3);
+            background: var(--bg-card-hover);
+        }
+
+        /* Hero Progress Ring Card (5 cols) */
+        .card-progress {
+            grid-column: span 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 380px;
+        }
+
+        .ring-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 10px 0 16px;
+        }
+
+        .ring-container svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .ring-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.06);
+            stroke-width: 14;
+        }
+
+        .ring-progress {
+            fill: none;
+            stroke: var(--primary-neon);
+            stroke-width: 14;
+            stroke-linecap: round;
+            stroke-dasharray: 565;
+            stroke-dashoffset: 200;
+            transition: stroke-dashoffset 1s ease-in-out;
+            filter: drop-shadow(0 0 10px rgba(0, 245, 155, 0.5));
+        }
+
+        .ring-center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .ring-step-count {
+            font-size: 38px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .ring-step-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-neon);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 6px;
+        }
+
+        .ring-goal-subtext {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Metrics Stat Cards (7 cols) */
+        .metrics-grid {
+            grid-column: span 7;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .metric-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .metric-item:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .icon-fire { background: rgba(255, 77, 109, 0.15); color: var(--coral-alert); }
+        .icon-dist { background: rgba(0, 210, 255, 0.15); color: var(--cyan-accent); }
+        .icon-time { background: rgba(255, 174, 0, 0.15); color: var(--amber-accent); }
+        .icon-cadence { background: rgba(0, 245, 155, 0.15); color: var(--primary-neon); }
+
+        .metric-val {
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+        }
+
+        .metric-unit {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .metric-name {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        /* 24-Hour Activity Chart (8 cols) */
+        .card-chart {
+            grid-column: span 8;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 180px;
+            padding-top: 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .bar-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+            position: relative;
+        }
+
+        .bar-fill {
+            width: 100%;
+            background: linear-gradient(180deg, var(--primary-neon) 0%, rgba(0, 245, 155, 0.2) 100%);
+            border-radius: 6px 6px 2px 2px;
+            transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-height: 4px;
+            position: relative;
+        }
+
+        .bar-fill:hover {
+            background: linear-gradient(180deg, var(--cyan-accent) 0%, var(--primary-neon) 100%);
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+
+        .bar-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* Live Motion & AI Insights Card (4 cols) */
+        .card-ai {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-ai h3 {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .ai-chip {
+            background: rgba(0, 210, 255, 0.12);
+            color: var(--cyan-accent);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .motion-gauge-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+
+        .gauge-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .gauge-bar-track {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .gauge-bar-fill {
+            height: 100%;
+            width: 35%;
+            background: linear-gradient(90deg, var(--primary-neon), var(--cyan-accent));
+            border-radius: 999px;
+            transition: width 0.3s ease;
+        }
+
+        .ai-message {
+            background: rgba(0, 245, 155, 0.06);
+            border: 1px solid rgba(0, 245, 155, 0.2);
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #D1FAE5;
+        }
+
+        /* Simulator & Controls (12 cols) */
+        .card-controls {
+            grid-column: span 12;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: rgba(26, 38, 62, 0.6);
+        }
+
+        .control-btns {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 980px) {
+            .card-progress, .metrics-grid, .card-chart, .card-ai {
+                grid-column: span 12;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Navigation -->
+        <header>
+            <div class="brand-area">
+                <div class="brand-logo">👟</div>
+                <div class="brand-title">
+                    <h1>Smart Health Step & Kinematics</h1>
+                    <p>ระบบตรวจจับการก้าวเดินและชีวกลศาสตร์สุขภาพดิจิทัล • มรภ.รำไพพรรณี</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="badge-live">
+                    <span class="pulse-dot"></span>
+                    <span id="sensorStatus">Hardware Pedometer / Accelerometer Active</span>
+                </div>
+                <button class="btn-action" onclick="fetchTelemetry()">🔄 รีเฟรช</button>
+                <a href="latex_manual/main.pdf" target="_blank" class="btn-action">📖 ตำราคู่มือวิชาการ</a>
+                <a href="app-portal/files/smart_health_tracker_v1.0.apk" class="btn-action primary" download>📲 ดาวน์โหลด APK</a>
+            </div>
+        </header>
+
+        <!-- Bento Grid Main Content -->
+        <div class="bento-grid">
+            <!-- 1. Progress Ring Card -->
+            <div class="card card-progress">
+                <div style="font-size: 14px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">
+                    Daily Step Target
+                </div>
+                <div class="ring-container">
+                    <svg viewBox="0 0 200 200">
+                        <circle class="ring-bg" cx="100" cy="100" r="90" />
+                        <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="90" />
+                    </svg>
+                    <div class="ring-center-text">
+                        <span class="ring-step-count" id="stepsDisplay">0</span>
+                        <span class="ring-step-label">ก้าวเดิน</span>
+                    </div>
+                </div>
+                <div class="ring-goal-subtext" id="goalPercentText">0% ของเป้าหมายประจำวัน (10,000 ก้าว)</div>
+            </div>
+
+            <!-- 2. Metrics 4 Cards Grid -->
+            <div class="metrics-grid">
+                <!-- Calories -->
+                <div class="metric-item">
+                    <div class="metric-header">
+                        <span class="metric-name">พลังงานที่เผาผลาญ</span>
+                        <div class="metric-icon icon-fire">🔥</div>
+                    </div>
+                    <div>
+                        <span class="metric-val" id="valCalories">0.0</span>
+                        <span class="metric-unit">kcal</span>
+                    </div>
+                </div>
+
+                <!-- Distance -->
+                <div class="metric-item">
+                    <div class="metric-header">
+                        <span class="metric-name">ระยะทางรวม</span>
+                        <div class="metric-icon icon-dist">📍</div>
+                    </div>
+                    <div>
+                        <span class="metric-val" id="valDistance">0.00</span>
+                        <span class="metric-unit">km</span>
+                    </div>
+                </div>
+
+                <!-- Active Time -->
+                <div class="metric-item">
+                    <div class="metric-header">
+                        <span class="metric-name">เวลาที่มีการเคลื่อนไหว</span>
+                        <div class="metric-icon icon-time">⏱️</div>
+                    </div>
+                    <div>
+                        <span class="metric-val" id="valActiveMin">0</span>
+                        <span class="metric-unit">นาที</span>
+                    </div>
+                </div>
+
+                <!-- Cadence -->
+                <div class="metric-item">
+                    <div class="metric-header">
+                        <span class="metric-name">จังหวะก้าว (Cadence)</span>
+                        <div class="metric-icon icon-cadence">⚡</div>
+                    </div>
+                    <div>
+                        <span class="metric-val" id="valCadence">0</span>
+                        <span class="metric-unit">SPM</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 24-Hour Activity Chart -->
+            <div class="card card-chart">
+                <div class="chart-header">
+                    <div>
+                        <h3>📊 กราฟการก้าวเดินตลอด 24 ชั่วโมง</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">แสดงจำนวนก้าวในแต่ละช่วงเวลาของวัน (00:00 - 23:00 น.)</p>
+                    </div>
+                    <span style="font-size: 12px; color: var(--primary-neon); font-weight: 600;" id="peakHourText">Peak Hour: --:--</span>
+                </div>
+                <div class="chart-bars" id="chartBars">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- 4. Real-time Motion & On-Device AI Insights -->
+            <div class="card card-ai">
+                <div>
+                    <h3>
+                        <span>🧠 AI Health Insights</span>
+                        <span class="ai-chip">Neural Engine</span>
+                    </h3>
+                    <div class="motion-gauge-box">
+                        <div class="gauge-top">
+                            <span>ความเข้มข้นของการเคลื่อนไหว (Intensity)</span>
+                            <span id="motionPercent" style="font-weight: 700; color: var(--primary-neon);">0%</span>
+                        </div>
+                        <div class="gauge-bar-track">
+                            <div class="gauge-bar-fill" id="motionBar" style="width: 0%;"></div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; display: flex; justify-content: space-between; color: var(--text-secondary);">
+                            <span>สถานะปัจจุบัน:</span>
+                            <strong id="activityBadge" style="color: var(--primary-neon);">🧘 พักผ่อน / นั่งนิ่ง</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ai-message" id="aiMessage">
+                    ✨ <strong>คำแนะนำจากระบบ:</strong> คุณมีการเคลื่อนไหวสม่ำเสมอ ร่างกายอยู่ในสภาวะสมดุล แนะนำดื่มน้ำเพิ่มขึ้น 250 มล. เมื่อบรรลุเป้าหมายก้าวเดิน!
+                </div>
+            </div>
+
+            <!-- 5. Controls & Simulation Bar -->
+            <div class="card card-controls">
+                <div>
+                    <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 2px;">🎮 ชุดทดสอบและจำลองกิจกรรม (Activity Simulator & Sync)</h4>
+                    <p style="font-size: 12px; color: var(--text-secondary);">จำลองการตรวจจับก้าวเดิน วิ่ง ปั่นจักรยาน หรือส่งสัญญาณซิงค์กับฐานข้อมูล</p>
+                </div>
+                <div class="control-btns">
+                    <button class="btn-action" onclick="simulateWalk(50)">🚶 +50 ก้าวเดิน</button>
+                    <button class="btn-action" onclick="simulateWalk(200)">🏃 +200 ก้าววิ่ง</button>
+                    <button class="btn-action" onclick="simulateCycling()">🚴 ปั่นจักรยาน (+1.5 km)</button>
+                    <button class="btn-action" onclick="syncWithApi()">☁️ บันทึกลง API</button>
+                    <button class="btn-action" style="color: var(--coral-alert); border-color: rgba(255,77,109,0.3);" onclick="resetSteps()">🔄 รีเซตเป็น 0</button>
+                </div>
+            </div>
+
+            <!-- 6. Satellite GPS Route Map & Multi-Sport Tracker (12 cols) -->
+            <div class="card" style="grid-column: span 12;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                    <div>
+                        <h3 style="font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            <span>🛰️ แผนที่ภาพถ่ายดาวเทียมและการติดตามเส้นทาง GPS (Satellite Multi-Sport Tracker)</span>
+                        </h3>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                            พิกัดอ้างอิง: มหาวิทยาลัยราชภัฏรำไพพรรณี จันทบุรี (12.65651°N, 102.10642°E) • รองรับ เดิน, วิ่ง, ปั่นจักรยาน และส่งออก GeoJSON
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn-action" id="modeWalkBtn" style="border-color: var(--primary-neon); color: var(--primary-neon);" onclick="setSportMode('walking')">🚶 เดิน (4.5 km/h)</button>
+                        <button class="btn-action" id="modeRunBtn" onclick="setSportMode('running')">🏃 วิ่ง (9.5 km/h)</button>
+                        <button class="btn-action" id="modeCycleBtn" onclick="setSportMode('cycling')">🚴 ปั่นจักรยาน (22.0 km/h)</button>
+                        <button class="btn-action" onclick="toggleMapLayer()">🗺️ สลับชั้นแผนที่ดาวเทียม/ถนน</button>
+                    </div>
+                </div>
+
+                <!-- Map Viewport -->
+                <div id="satelliteMap" style="width: 100%; height: 390px; border-radius: 16px; border: 1px solid rgba(0, 210, 255, 0.3); margin-bottom: 16px; z-index: 1;"></div>
+
+                <!-- GPS Telemetry HUD -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                    <div style="background: rgba(0,0,0,0.35); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+                        <div style="font-size: 11px; color: var(--text-secondary);">ระยะทาง GPS สะสม</div>
+                        <div style="font-size: 22px; font-weight: 800; color: var(--cyan-accent); margin-top: 4px;" id="gpsDistVal">0.00 km</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.35); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+                        <div style="font-size: 11px; color: var(--text-secondary);">ความเร็วปัจจุบัน (Speed)</div>
+                        <div style="font-size: 22px; font-weight: 800; color: var(--primary-neon); margin-top: 4px;" id="gpsSpeedVal">0.0 km/h</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.35); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+                        <div style="font-size: 11px; color: var(--text-secondary);">อัตราเพซ (Pace)</div>
+                        <div style="font-size: 22px; font-weight: 800; color: var(--amber-accent); margin-top: 4px;" id="gpsPaceVal">--:-- /km</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.35); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+                        <div style="font-size: 11px; color: var(--text-secondary);">ความสูงชันสะสม (Elevation)</div>
+                        <div style="font-size: 22px; font-weight: 800; color: #E2E8F0; margin-top: 4px;" id="gpsElevVal">+0.0 m</div>
+                    </div>
+                </div>
+
+                <!-- GPS Controls -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn-action primary" id="btnStartGps" onclick="toggleGpsTracking()">▶️ เริ่มบันทึกเส้นทาง GPS</button>
+                        <button class="btn-action" onclick="saveWorkoutSession()">💾 บันทึกลงประวัติกิจกรรม</button>
+                        <button class="btn-action" onclick="clearGpsRoute()">🔄 ล้างเส้นทาง</button>
+                        <button class="btn-action" onclick="exportGeoJson()">📤 ส่งออก GeoJSON</button>
+                    </div>
+                    <span id="gpsCoordDisplay" style="font-size: 12px; color: var(--text-muted); font-family: monospace;">
+                        พิกัดสด: 12.65651°N, 102.10642°E (±3.2m)
+                    </span>
+                </div>
+            </div>
+
+            <!-- 7. Workout History Log (12 cols) -->
+            <div class="card" style="grid-column: span 12;">
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 14px;">📜 ประวัติการออกกำลังกายและการเดินทาง (Recorded Activity History)</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary);">
+                                <th style="padding: 10px;">วัน-เวลา</th>
+                                <th style="padding: 10px;">ประเภทกิจกรรม</th>
+                                <th style="padding: 10px;">ระยะทาง (km)</th>
+                                <th style="padding: 10px;">ความเร็วเฉลี่ย</th>
+                                <th style="padding: 10px;">พลังงาน (kcal)</th>
+                                <th style="padding: 10px;">พิกัดดาวเทียม</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                <td style="padding: 10px;">วันนี้ • 06:30 น.</td>
+                                <td style="padding: 10px;"><span style="color: var(--cyan-accent); font-weight: 600;">🚴 ปั่นจักรยาน</span></td>
+                                <td style="padding: 10px;">5.40 km</td>
+                                <td style="padding: 10px;">21.4 km/h</td>
+                                <td style="padding: 10px;">185.0 kcal</td>
+                                <td style="padding: 10px; font-family: monospace; color: var(--text-secondary);">RBRU Campus Loop (42 pts)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                <td style="padding: 10px;">วานนี้ • 17:15 น.</td>
+                                <td style="padding: 10px;"><span style="color: var(--amber-accent); font-weight: 600;">🏃 วิ่งออกกำลังกาย</span></td>
+                                <td style="padding: 10px;">3.25 km</td>
+                                <td style="padding: 10px;">9.2 km/h</td>
+                                <td style="padding: 10px;">240.5 kcal</td>
+                                <td style="padding: 10px; font-family: monospace; color: var(--text-secondary);">RBRU Stadium Track (68 pts)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State variables
+        let steps = 0;
+        let goal = 10000;
+        let cadence = 0;
+        let intensity = 0.0;
+        let activeMinutes = 0;
+        let currentActivity = 'stationary';
+        let hourlySteps = new Array(24).fill(0);
+
+        const circleRadius = 90;
+        const circumference = 2 * Math.PI * circleRadius; // ~565.48
+
+        function initChart() {
+            const container = document.getElementById('chartBars');
+            container.innerHTML = '';
+            for (let h = 0; h < 24; h++) {
+                const col = document.createElement('div');
+                col.className = 'bar-col';
+                
+                const fill = document.createElement('div');
+                fill.className = 'bar-fill';
+                fill.id = 'barHour' + h;
+                fill.style.height = '4px';
+                fill.title = `${h}:00 - 0 ก้าว`;
+
+                const label = document.createElement('span');
+                label.className = 'bar-label';
+                label.innerText = h % 4 === 0 ? h + ':00' : '';
+
+                col.appendChild(fill);
+                col.appendChild(label);
+                container.appendChild(col);
+            }
+        }
+
+        function updateUI() {
+            // Update steps count and ring
+            document.getElementById('stepsDisplay').innerText = steps.toLocaleString();
+            const ratio = Math.min(steps / goal, 1.0);
+            const offset = circumference * (1 - ratio);
+            document.getElementById('ringProgress').style.strokeDashoffset = offset;
+            
+            const pct = Math.round((steps / goal) * 100);
+            document.getElementById('goalPercentText').innerText = `${pct}% ของเป้าหมายประจำวัน (${goal.toLocaleString()} ก้าว)`;
+
+            // Calculate biometrics
+            const distanceKm = (steps * 0.00075).toFixed(2);
+            const caloriesKcal = (steps * 0.042).toFixed(1);
+            document.getElementById('valDistance').innerText = distanceKm;
+            document.getElementById('valCalories').innerText = caloriesKcal;
+            document.getElementById('valActiveMin').innerText = activeMinutes;
+            document.getElementById('valCadence').innerText = cadence;
+
+            // Update Motion Intensity & Activity Badge
+            const intPct = Math.round(intensity * 100);
+            document.getElementById('motionPercent').innerText = intPct + '%';
+            document.getElementById('motionBar').style.width = intPct + '%';
+
+            const badge = document.getElementById('activityBadge');
+            if (currentActivity === 'running' || cadence > 120) {
+                badge.innerText = '🏃 กำลังวิ่ง (Running)';
+                badge.style.color = '#FFAE00';
+            } else if (currentActivity === 'walking' || cadence > 50) {
+                badge.innerText = '🚶 กำลังเดิน (Walking)';
+                badge.style.color = '#00F59B';
+            } else {
+                badge.innerText = '🧘 พักผ่อน / นั่งนิ่ง (Stationary)';
+                badge.style.color = '#94A3B8';
+            }
+
+            // Update Chart
+            let maxSteps = Math.max(...hourlySteps, 300);
+            let peakH = 0;
+            let peakVal = 0;
+            for (let h = 0; h < 24; h++) {
+                const s = hourlySteps[h] || 0;
+                if (s > peakVal) { peakVal = s; peakH = h; }
+                const bar = document.getElementById('barHour' + h);
+                if (bar) {
+                    const hPct = Math.max((s / maxSteps) * 100, 3);
+                    bar.style.height = hPct + '%';
+                    bar.title = `${h}:00 น. : ${s} ก้าว`;
+                }
+            }
+            document.getElementById('peakHourText').innerText = peakVal > 0 ? `Peak Hour: ${peakH}:00 น. (${peakVal} ก้าว)` : 'Peak Hour: --:--';
+        }
+
+        function simulateWalk(addSteps) {
+            steps += addSteps;
+            const currentH = new Date().getHours();
+            hourlySteps[currentH] = (hourlySteps[currentH] || 0) + addSteps;
+
+            if (addSteps > 100) {
+                currentActivity = 'running';
+                cadence = 145;
+                intensity = 0.85;
+                activeMinutes += 3;
+            } else {
+                currentActivity = 'walking';
+                cadence = 105;
+                intensity = 0.45;
+                activeMinutes += 1;
+            }
+
+            updateUI();
+
+            // Decay after 4 seconds
+            setTimeout(() => {
+                cadence = 0;
+                intensity = 0.05;
+                currentActivity = 'stationary';
+                updateUI();
+            }, 4000);
+        }
+
+        function simulateCycling() {
+            currentActivity = 'cycling';
+            cadence = 88;
+            intensity = 0.78;
+            activeMinutes += 5;
+            steps += 350; // Equivalent metabolic steps
+            setSportMode('cycling');
+            if (!isGpsTracking) toggleGpsTracking();
+            updateUI();
+        }
+
+        // ================= SATELLITE GPS MAP & MULTI-SPORT ENGINE =================
+        let map, satLayer, streetLayer, isSatActive = true;
+        let routePolyline, liveMarker;
+        let gpsWaypoints = [];
+        let isGpsTracking = false;
+        let gpsTimer = null;
+        let sportMode = 'walking'; // walking | running | cycling
+        let simAngle = 0;
+        let gpsTotalDistKm = 0.0;
+        let gpsElevationGain = 0.0;
+        const rbruCenter = [12.656512, 102.106421];
+
+        function initSatelliteMap() {
+            if (typeof L === 'undefined') return;
+            map = L.map('satelliteMap', {
+                center: rbruCenter,
+                zoom: 17,
+                zoomControl: true
+            });
+
+            satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; World Imagery Satellite',
+                maxZoom: 19
+            });
+
+            streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 19
+            });
+
+            satLayer.addTo(map);
+
+            routePolyline = L.polyline([], {
+                color: '#00F59B',
+                weight: 5,
+                opacity: 0.9
+            }).addTo(map);
+
+            liveMarker = L.circleMarker(rbruCenter, {
+                radius: 9,
+                fillColor: '#00D2FF',
+                color: '#FFFFFF',
+                weight: 3,
+                fillOpacity: 1
+            }).addTo(map).bindPopup('📍 พิกัดปัจจุบัน: มรภ.รำไพพรรณี');
+        }
+
+        function toggleMapLayer() {
+            if (!map) return;
+            if (isSatActive) {
+                map.removeLayer(satLayer);
+                streetLayer.addTo(map);
+                isSatActive = false;
+            } else {
+                map.removeLayer(streetLayer);
+                satLayer.addTo(map);
+                isSatActive = true;
+            }
+        }
+
+        function setSportMode(mode) {
+            sportMode = mode;
+            document.getElementById('modeWalkBtn').style.borderColor = mode === 'walking' ? 'var(--primary-neon)' : 'var(--border-subtle)';
+            document.getElementById('modeWalkBtn').style.color = mode === 'walking' ? 'var(--primary-neon)' : 'var(--text-primary)';
+            document.getElementById('modeRunBtn').style.borderColor = mode === 'running' ? 'var(--amber-accent)' : 'var(--border-subtle)';
+            document.getElementById('modeRunBtn').style.color = mode === 'running' ? 'var(--amber-accent)' : 'var(--text-primary)';
+            document.getElementById('modeCycleBtn').style.borderColor = mode === 'cycling' ? 'var(--cyan-accent)' : 'var(--border-subtle)';
+            document.getElementById('modeCycleBtn').style.color = mode === 'cycling' ? 'var(--cyan-accent)' : 'var(--text-primary)';
+
+            if (routePolyline) {
+                const color = mode === 'cycling' ? '#00D2FF' : (mode === 'running' ? '#FFAE00' : '#00F59B');
+                routePolyline.setStyle({ color: color });
+            }
+        }
+
+        function toggleGpsTracking() {
+            const btn = document.getElementById('btnStartGps');
+            if (!isGpsTracking) {
+                isGpsTracking = true;
+                btn.innerText = '⏸️ พักการบันทึกเส้นทาง GPS';
+                btn.style.background = 'linear-gradient(135deg, #FFAE00, #F59E0B)';
+                if (gpsWaypoints.length === 0) {
+                    gpsWaypoints.push([...rbruCenter]);
+                }
+                gpsTimer = setInterval(stepGpsSimulation, 1200);
+            } else {
+                isGpsTracking = false;
+                btn.innerText = '▶️ บันทึกเส้นทางต่อ';
+                btn.style.background = 'linear-gradient(135deg, var(--primary-neon), #00C875)';
+                clearInterval(gpsTimer);
+                document.getElementById('gpsSpeedVal').innerText = '0.0 km/h';
+            }
+        }
+
+        function stepGpsSimulation() {
+            simAngle += sportMode === 'cycling' ? 0.22 : (sportMode === 'running' ? 0.14 : 0.08);
+            const radius = 0.0012;
+            const lat = rbruCenter[0] + Math.sin(simAngle) * radius;
+            const lng = rbruCenter[1] + Math.cos(simAngle) * radius * 1.3;
+            const newPt = [lat, lng];
+
+            gpsWaypoints.push(newPt);
+            if (routePolyline && liveMarker) {
+                routePolyline.setLatLngs(gpsWaypoints);
+                liveMarker.setLatLng(newPt);
+                map.panTo(newPt, { animate: true });
+            }
+
+            const stepDistKm = sportMode === 'cycling' ? 0.045 : (sportMode === 'running' ? 0.022 : 0.011);
+            gpsTotalDistKm += stepDistKm;
+            gpsElevationGain += Math.random() * 0.4;
+
+            const baseSpeed = sportMode === 'cycling' ? 22.4 : (sportMode === 'running' ? 9.6 : 4.8);
+            const liveSpeed = (baseSpeed + (Math.random() - 0.5) * 1.4).toFixed(1);
+            const paceMin = (60 / parseFloat(liveSpeed));
+            const pMin = Math.floor(paceMin);
+            const pSec = Math.round((paceMin - pMin) * 60);
+
+            document.getElementById('gpsDistVal').innerText = gpsTotalDistKm.toFixed(2) + ' km';
+            document.getElementById('gpsSpeedVal').innerText = liveSpeed + ' km/h';
+            document.getElementById('gpsPaceVal').innerText = `${String(pMin).padStart(2,'0')}:${String(pSec).padStart(2,'0')} /km`;
+            document.getElementById('gpsElevVal').innerText = '+' + gpsElevationGain.toFixed(1) + ' m';
+            document.getElementById('gpsCoordDisplay').innerText = `พิกัดสด: ${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E (±2.8m) • ${gpsWaypoints.length} จุด`;
+        }
+
+        function clearGpsRoute() {
+            if (isGpsTracking) toggleGpsTracking();
+            gpsWaypoints = [];
+            gpsTotalDistKm = 0.0;
+            gpsElevationGain = 0.0;
+            if (routePolyline) routePolyline.setLatLngs([]);
+            if (liveMarker) liveMarker.setLatLng(rbruCenter);
+            if (map) map.setView(rbruCenter, 17);
+            document.getElementById('gpsDistVal').innerText = '0.00 km';
+            document.getElementById('gpsSpeedVal').innerText = '0.0 km/h';
+            document.getElementById('gpsPaceVal').innerText = '--:-- /km';
+            document.getElementById('gpsElevVal').innerText = '+0.0 m';
+            document.getElementById('btnStartGps').innerText = '▶️ เริ่มบันทึกเส้นทาง GPS';
+        }
+
+        function saveWorkoutSession() {
+            if (gpsTotalDistKm <= 0) {
+                alert('กรุณาเริ่มบันทึกเส้นทาง GPS ก่อนบันทึกประวัติครับ');
+                return;
+            }
+            const tbody = document.getElementById('historyTableBody');
+            const now = new Date();
+            const timeStr = `วันนี้ • ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} น.`;
+            const modeLabel = sportMode === 'cycling'
+                ? '<span style="color: var(--cyan-accent); font-weight: 600;">🚴 ปั่นจักรยาน</span>'
+                : (sportMode === 'running'
+                    ? '<span style="color: var(--amber-accent); font-weight: 600;">🏃 วิ่งออกกำลังกาย</span>'
+                    : '<span style="color: var(--primary-neon); font-weight: 600;">🚶 เดินเพื่อสุขภาพ</span>');
+            const avgSpd = sportMode === 'cycling' ? '21.8 km/h' : (sportMode === 'running' ? '9.5 km/h' : '4.7 km/h');
+            const kcal = (gpsTotalDistKm * (sportMode === 'cycling' ? 35 : 65)).toFixed(1);
+
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid rgba(255,255,255,0.04)';
+            tr.innerHTML = `
+                <td style="padding: 10px;">${timeStr}</td>
+                <td style="padding: 10px;">${modeLabel}</td>
+                <td style="padding: 10px;">${gpsTotalDistKm.toFixed(2)} km</td>
+                <td style="padding: 10px;">${avgSpd}</td>
+                <td style="padding: 10px;">${kcal} kcal</td>
+                <td style="padding: 10px; font-family: monospace; color: var(--text-secondary);">RBRU Satellite Track (${gpsWaypoints.length} pts)</td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+            alert('✅ บันทึกประวัติการเดินทางและพิกัด GPS สำเร็จ!');
+        }
+
+        function exportGeoJson() {
+            if (gpsWaypoints.length === 0) {
+                alert('ยังไม่มีจุดพิกัดในเส้นทาง กรุณากดเริ่มบันทึกเส้นทาง GPS ก่อนครับ');
+                return;
+            }
+            const geojson = {
+                type: "FeatureCollection",
+                features: [{
+                    type: "Feature",
+                    properties: {
+                        sportMode: sportMode,
+                        distanceKm: gpsTotalDistKm,
+                        elevationGainM: gpsElevationGain,
+                        timestamp: new Date().toISOString()
+                    },
+                    geometry: {
+                        type: "LineString",
+                        coordinates: gpsWaypoints.map(pt => [pt[1], pt[0]])
+                    }
+                }]
+            };
+            const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: "application/geo+json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `smart_health_${sportMode}_route.geojson`;
+            a.click();
+        }
+
+        async function fetchTelemetry() {
+            try {
+                const res = await fetch('api.php?action=summary');
+                const json = await res.json();
+                if (json.success && json.data) {
+                    steps = json.data.steps || steps;
+                    goal = json.data.step_goal || 10000;
+                    cadence = json.data.cadence_spm || 0;
+                    intensity = json.data.motion_intensity || 0.0;
+                    activeMinutes = json.data.active_minutes || activeMinutes;
+                    currentActivity = json.data.current_activity || 'stationary';
+                    
+                    if (Array.isArray(json.data.hourly)) {
+                        hourlySteps = json.data.hourly;
+                    }
+                    updateUI();
+                }
+            } catch (err) {
+                console.warn('[i] Local demo mode active (API sync ready):', err);
+            }
+        }
+
+        async function syncWithApi() {
+            try {
+                const payload = {
+                    steps: steps,
+                    step_goal: goal,
+                    distance_km: parseFloat((steps * 0.00075).toFixed(2)),
+                    calories_kcal: parseFloat((steps * 0.042).toFixed(1)),
+                    active_minutes: activeMinutes,
+                    cadence_spm: cadence,
+                    current_activity: currentActivity,
+                    motion_intensity: intensity,
+                    hourly: hourlySteps
+                };
+
+                const res = await fetch('api.php?action=sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('✅ ซิงค์สถิติก้าวเดินเข้าสู่ระบบฐานข้อมูลสำเร็จแล้ว!');
+                }
+            } catch (err) {
+                alert('⚠️ ไม่สามารถเชื่อมต่อ API ได้: ' + err);
+            }
+        }
+
+        async function resetSteps() {
+            if (!confirm('ยืนยันการรีเซตก้าวเดินวันนี้เป็น 0 หรือไม่?')) return;
+            steps = 0;
+            cadence = 0;
+            intensity = 0.0;
+            activeMinutes = 0;
+            currentActivity = 'stationary';
+            hourlySteps = new Array(24).fill(0);
+            updateUI();
+            try {
+                await fetch('api.php?action=reset');
+            } catch (e) {}
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            initSatelliteMap();
+            fetchTelemetry();
+            updateUI();
+        });
+    </script>
+</body>
+</html>
+

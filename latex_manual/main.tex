@@ -1,0 +1,58 @@
+\documentclass[12pt, a4paper, oneside]{book}
+
+% นำเข้าไฟล์สไตล์มาตรฐานวิชาการ RBRU
+\usepackage{styles/rbru_style}
+
+\begin{document}
+
+% ----------------------------------------------------
+% ส่วนนำ (Frontmatter)
+% ----------------------------------------------------
+\frontmatter
+
+% ปกนอกดีไซน์ Smartphone UI เสมือนจริง
+\input{frontmatter/cover}
+
+% หน้าปกรอง (Title Page)
+\include{frontmatter/titlepage}
+
+% คำนำ (Preface)
+\include{frontmatter/preface}
+
+% สารบัญหลัก
+\clearpage
+\phantomsection
+\tableofcontents
+
+% สารบัญตาราง
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{\listtablename}
+\listoftables
+
+% สารบัญภาพ
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{\listfigurename}
+\listoffigures
+
+% ----------------------------------------------------
+% ส่วนเนื้อหาหลัก (Mainmatter)
+% ----------------------------------------------------
+\mainmatter
+
+\include{chapters/ch01_digital_health_architecture}
+\include{chapters/ch02_physics_kinematics_signal}
+\include{chapters/ch03_exercise_science_biomechanics}
+\include{chapters/ch04_bento_grid_responsive_ui}
+\include{chapters/ch05_hands_on_lab_development}
+
+% ----------------------------------------------------
+% ส่วนท้าย (Backmatter)
+% ----------------------------------------------------
+\backmatter
+
+\include{backmatter/references}
+\include{backmatter/biography}
+
+\end{document}

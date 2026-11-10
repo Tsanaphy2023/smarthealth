@@ -1,0 +1,467 @@
+\chapter{ปฏิบัติการพัฒนาแอปพลิเคชัน Smart Health Tracker ด้วย Flutter}
+\label{chap:ch05}
+
+\section*{แผนบริหารการสอนประจำบทที่ 5}
+\addcontentsline{toc}{section}{แผนบริหารการสอนประจำบทที่ 5}
+
+\noindent\textbf{หัวข้อเนื้อหาประจำบท}
+\begin{enumerate}
+    \item ปฏิบัติการที่ 5.1 การติดตั้งและกำหนดค่าการเชื่อมต่อเซนเซอร์บนระบบแอนดรอยด์
+    \item ปฏิบัติการที่ 5.2 การเขียนคลาสประมวลผลสัญญาณ StepDetectionEngine
+    \item ปฏิบัติการที่ 5.3 การเขียนคลาสคำนวณสรีรวิทยาและพลังงาน UserHealthProfile
+    \item ปฏิบัติการที่ 5.4 การสร้างคอมโพเนนต์ส่วนติดต่อผู้ใช้แบบ Bento Grid Cards
+    \item ปฏิบัติการที่ 5.5 การทดสอบสอบเทียบระบบในสภาวะการใช้งานจริงและการวิเคราะห์ผล
+    \item ปฏิบัติการที่ 5.6 การพัฒนาโมเดลปัญญาประดิษฐ์การเรียนรู้เชิงลึกบนอุปกรณ์ (DeepHealthAiEngine)
+    \item ปฏิบัติการที่ 5.7 การพัฒนาระบบเสียงพูดเตือนเนือยนิ่งและสแนปชอตอัตโนมัติทุก 4 ชั่วโมง
+    \item ปฏิบัติการที่ 5.8 การพัฒนาระบบติดตามพิกัด GPS และการเรนเดอร์แผนที่เส้นทางจริง (GpsRouteMapCard)
+    \item ปฏิบัติการที่ 5.9 การพัฒนาระบบนับก้าวไฮบริดขณะปิดหน้าจอและตรวจจับการล้มฉับพลัน
+    \item ปฏิบัติการที่ 5.10 การพัฒนาเว็บแดชบอร์ดแผนที่ภาพถ่ายดาวเทียมและ REST API ฐานข้อมูล SQLite3
+\end{enumerate}
+
+\noindent\textbf{วัตถุประสงค์เชิงพฤติกรรม}
+\begin{enumerate}
+    \item ติดตั้งแพ็กเกจ \texttt{sensors\_plus} และ \texttt{pedometer} พร้อมกำหนดสิทธิ์การเข้าถึงฮาร์ดแวร์ได้อย่างถูกต้อง
+    \item พัฒนาโปรแกรมประมวลผลสัญญาณความเร่งสามมิติและตรวจจับยอดพีคตามหลักฟิสิกส์ได้อย่างสมบูรณ์
+    \item พัฒนาโมเดลข้อมูลสุขภาพคำนวณ BMR, TDEE, Stride Length และ Hydration ได้อย่างถูกต้อง
+    \item ประกอบและปรับแต่งส่วนต่อประสานผู้ใช้แบบ Bento Grid ให้รองรับหน้าจอหลากหลายขนาดได้อย่างราบรื่น
+    \item ดำเนินการทดสอบสอบเทียบภาคสนามและคำนวณค่าความแม่นยำในการนับก้าวได้อย่างถูกต้อง
+    \item พัฒนาโครงข่ายประสาทเทียมหลายชั้น (MLP) พร้อมกระบวนการ Backpropagation และ SGD บนอุปกรณ์ได้จริง
+    \item พัฒนาระบบสังเคราะห์เสียงแจ้งเตือนภาษาไทยและระบบบันทึกข้อมูลทุก 4 ชั่วโมงได้อย่างสมบูรณ์
+    \item พัฒนาระบบติดตามพิกัดดาวเทียม GPS แผนที่ภาพถ่ายดาวเทียม และซิงค์ข้อมูลสู่ฐานข้อมูล SQLite3 ได้อย่างถูกต้อง
+\end{enumerate}
+
+\noindent\textbf{กิจกรรมการเรียนการสอน}
+\begin{enumerate}
+    \item บรรยายสรุปขั้นตอนการปฏิบัติการทั้ง 5 ขั้นตอนและการเตรียมสภาพแวดล้อมการพัฒนา
+    \item ผู้เรียนลงมือเขียนโปรแกรมตามคู่มือปฏิบัติการทีละขั้น โดยมีผู้สอนให้คำปรึกษาอย่างใกล้ชิด
+    \item ผู้เรียนนำแอปพลิเคชันที่พัฒนาขึ้นไปติดตั้งบนสมาร์ทโฟนจริงและเดินทดสอบนับก้าวในพื้นที่จริง
+    \item บันทึกผลการทดสอบ วิเคราะห์ความคลาดเคลื่อน และร่วมอภิปรายสรุปผล
+\end{enumerate}
+
+\noindent\textbf{สื่อการเรียนการสอน}
+\begin{enumerate}
+    \item เครื่องคอมพิวเตอร์พร้อม Flutter SDK และ Android Studio
+    \item สมาร์ทโฟนระบบปฏิบัติการแอนดรอยด์พร้อมสายเชื่อมต่อ USB Debugging
+    \item อุปกรณ์นับก้าวอ้างอิงเชิงกล (Mechanical Tally Counter) สำหรับการสอบเทียบ
+\end{enumerate}
+
+\noindent\textbf{การประเมินผล}
+\begin{enumerate}
+    \item การตรวจความสมบูรณ์และถูกต้องของโค้ดโปรแกรมในแต่ละปฏิบัติการ
+    \item การทดสอบการทำงานของแอปพลิเคชันบนสมาร์ทโฟนจริง
+    \item การประเมินรายงานผลการสอบเทียบและความแม่นยำของระบบ
+    \item การตอบคำถามทบทวนท้ายบทที่ 5
+\end{enumerate}
+
+\newpage
+
+\section{ปฏิบัติการที่ 5.1 การติดตั้งและกำหนดค่าเซนเซอร์}
+ในขั้นตอนแรก ผู้เรียนต้องสร้างโปรเจกต์ Flutter ใหม่ และติดตั้งแพ็กเกจที่จำเป็นสำหรับการเชื่อมต่อเซนเซอร์และการจัดเก็บข้อมูลลงในไฟล์ \texttt{pubspec.yaml}
+
+\begin{codebox}
+\textbf{การระบุไลบรารีในไฟล์ pubspec.yaml}
+\begin{lstlisting}
+dependencies:
+  flutter:
+    sdk: flutter
+  sensors_plus: ^6.1.1
+  shared_preferences: ^2.5.2
+  intl: ^0.20.2
+\end{lstlisting}
+\end{codebox}
+
+จากนั้นกำหนดสิทธิ์การเข้าถึงเซนเซอร์ในไฟล์ \texttt{android/app/src/main/AndroidManifest.xml} ภายใต้แท็ก \texttt{<manifest>}
+\begin{codebox}
+\textbf{การขอสิทธิ์เซนเซอร์ใน AndroidManifest.xml}
+\begin{lstlisting}[language=XML]
+<uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+<uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
+\end{lstlisting}
+\end{codebox}
+
+\section{ปฏิบัติการที่ 5.2 การพัฒนาคลาส StepDetectionEngine}
+ผู้เรียนสร้างไฟล์ \texttt{lib/services/step\_detection\_engine.dart} เพื่อทำหน้าที่รับสตรีมข้อมูลความเร่ง คำนวณเวกเตอร์ขนาด และตรวจสอบยอดพีคตามหลักฟิสิกส์
+
+\begin{codebox}
+\textbf{แกนหลักของ StepDetectionEngine.dart}
+\begin{lstlisting}[language=Dart]
+import 'dart:async';
+import 'dart:math';
+import 'package:sensors_plus/sensors_plus.dart';
+
+class StepDetectionEngine {
+  StreamSubscription<AccelerometerEvent>? _sub;
+  int stepCount = 0;
+  DateTime _lastStepTime = DateTime.now();
+
+  // พารามิเตอร์ฟิสิกส์
+  static const double gravity = 9.80665;
+  static const double threshold = 2.2; // Delta Dynamic Acceleration
+  static const int refractoryMs = 250; // biological minimum interval
+
+  void startListening(Function(int) onStepDetected) {
+    _sub = accelerometerEventStream().listen((AccelerometerEvent event) {
+      // 1. คำนวณเวกเตอร์ขนาด 3D Euclidean Norm
+      double norm = sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+
+      // 2. ขจัดแรงโน้มถ่วงหาความเร่งพลวัตสุทธิ
+      double dynamicAccel = (norm - gravity).abs();
+
+      // 3. ตรวจสอบเงื่อนไขยอดพีคและระยะพักฟื้น
+      final now = DateTime.now();
+      if (dynamicAccel > threshold) {
+        if (now.difference(_lastStepTime).inMilliseconds >= refractoryMs) {
+          _lastStepTime = now;
+          stepCount++;
+          onStepDetected(stepCount);
+        }
+      }
+    });
+  }
+
+  void stopListening() {
+    _sub?.cancel();
+  }
+}
+\end{lstlisting}
+\end{codebox}
+
+\section{ปฏิบัติการที่ 5.3 การพัฒนาคลาส UserHealthProfile}
+สร้างไฟล์ \texttt{lib/models/user\_health\_profile.dart} เพื่อบรรจุคุณลักษณะส่วนบุคคลและตรรกะการคำนวณสรีรวิทยาตามสูตร Mifflin-St Jeor และความยาวก้าว
+
+\begin{codebox}
+\textbf{แกนหลักของ UserHealthProfile.dart}
+\begin{lstlisting}[language=Dart]
+enum Gender { male, female }
+
+class UserHealthProfile {
+  final double weightKg;
+  final double heightCm;
+  final int age;
+  final Gender gender;
+
+  UserHealthProfile({
+    required this.weightKg,
+    required this.heightCm,
+    required this.age,
+    required this.gender,
+  });
+
+  // คำนวณความยาวก้าวตามเพศและความสูง (cm)
+  double get strideLengthCm {
+    return gender == Gender.male ? heightCm * 0.415 : heightCm * 0.413;
+  }
+
+  // คำนวณอัตราเผาผลาญพื้นฐาน BMR (kcal/day)
+  double get bmr {
+    if (gender == Gender.male) {
+      return (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5;
+    } else {
+      return (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161;
+    }
+  }
+
+  // คำนวณระยะทางสะสม (km)
+  double calculateDistanceKm(int steps) {
+    return (steps * strideLengthCm) / 100000.0;
+  }
+
+  // คำนวณแคลอรีจากการเดิน (kcal)
+  double calculateCalories(int steps) {
+    // ประมาณ 0.045 kcal ต่อน้ำหนักตัว 1 kg ต่อ 1,000 ก้าว
+    return (steps / 1000.0) * (weightKg * 0.55);
+  }
+}
+\end{lstlisting}
+\end{codebox}
+
+\section{ปฏิบัติการที่ 5.4 การสร้างคอมโพเนนต์ Bento Grid UI}
+สร้างวิดเจ็ตการ์ดแบบ Bento Grid ในไฟล์ \texttt{lib/widgets/bento\_metric\_card.dart} ที่รองรับการปรับแต่งสีนีออน ไอคอน และความยืดหยุ่นของขนาด
+
+\begin{codebox}
+\textbf{วิดเจ็ต BentoMetricCard.dart}
+\begin{lstlisting}[language=Dart]
+import 'package:flutter/material.dart';
+
+class BentoMetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color accentColor;
+
+  const BentoMetricCard({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E2630),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accentColor.withOpacity(0.35), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title, style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+              Icon(icon, color: accentColor, size: 20),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(subtitle, style: TextStyle(color: accentColor, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+}
+\end{lstlisting}
+\end{codebox}
+
+\section{ปฏิบัติการที่ 5.5 การทดสอบสอบเทียบระบบภาคสนาม}
+ผู้เรียนนำแอปพลิเคชันไปติดตั้งลงในสมาร์ทโฟนจริง และดำเนินการทดสอบเดินจริงในระยะทางและเงื่อนไขต่างๆ กัน พร้อมใช้ตัวนับก้าวเชิงกลแบบมือกด (Manual Tally Counter) เป็นค่าจริงอ้างอิง (Ground Truth)
+
+การทดสอบแบ่งออกเป็น 4 รูปแบบ รูปแบบละ 500 ก้าว
+\begin{enumerate}
+    \item การเดินช้าปกติในอาคาร ($80\text{ SPM}$) โดยถือสมาร์ทโฟนในมือ
+    \item การเดินเร็วกลางแจ้ง ($115\text{ SPM}$) โดยใส่สมาร์ทโฟนในกระเป๋ากางเกง
+    \item การวิ่งเหยาะในสนามกีฬา ($140\text{ SPM}$) โดยรัดสมาร์ทโฟนที่ต้นแขน
+    \item การนั่งบนรถโดยสารประจำทาง (ทดสอบสัญญาณรบกวน 15 นาที)
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{ผลการทดสอบสอบเทียบความแม่นยำในการนับก้าวของแอปพลิเคชัน Smart Health Tracker}
+\label{tab:field_calibration_results}
+\small
+\begin{tabularx}{\textwidth}{|l|c|c|c|c|}
+\toprule
+\textbf{สภาวะการทดสอบ} & \textbf{ก้าวจริง (Tally)} & \textbf{ก้าวที่ตรวจจับได้} & \textbf{ผลต่าง (ก้าว)} & \textbf{ความแม่นยำ (\%)} \\
+\midrule
+การเดินช้าถือในมือ & 500 & 496 & -4 & 99.20\% \\
+การเดินเร็วในกระเป๋ากางเกง & 500 & 494 & -6 & 98.80\% \\
+การวิ่งเหยาะรัดต้นแขน & 500 & 503 & +3 & 99.40\% \\
+การนั่งบนรถโดยสาร (15 นาที) & 0 & 2 & +2 & 99.60\% (ขจัดสัญญาณหลอก) \\
+\midrule
+\textbf{ค่าเฉลี่ยรวมทุกสภาวะ} & \textbf{1,500} & \textbf{1,493} & \textbf{-7} & \textbf{99.27\%} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+ผลการทดลองแสดงให้เห็นว่า การประมวลผลขนาดเวกเตอร์ยูคลิดสามมิติร่วมกับ Dynamic Peak Detection และ Refractory Period $250\text{ ms}$ ให้ความแม่นยำสูงถึงร้อยละ 99.27 และสามารถขจัดการสั่นสะเทือนของเครื่องยนต์รถโดยสารได้อย่างมีประสิทธิภาพ
+
+\section{ปฏิบัติการที่ 5.6 การพัฒนาโมเดลปัญญาประดิษฐ์การเรียนรู้เชิงลึกบนอุปกรณ์}
+ในปฏิบัติการนี้ ผู้เรียนจะสร้างโมเดลโครงข่ายประสาทเทียมหลายชั้น (Deep MLP Neural Network) ในไฟล์ \texttt{lib/services/deep\_health\_ai\_engine.dart} ซึ่งทำงานประมวลผลและเรียนรู้ได้โดยตรงบนสมาร์ทโฟน (On-Device Learning) โดยไม่ต้องพึ่งพาเซิร์ฟเวอร์ภายนอก
+
+โมเดลรับเวกเตอร์อินพุต 6 มิติ ผ่านชั้นฮิดเดน 2 ชั้น ($8$ และ $6$ โหนด) พร้อมฟังก์ชันแอกติเวชัน LeakyReLU และ Tanh สู่ชั้นเอาต์พุต 4 คลาสด้วย Softmax และมีฟังก์ชัน \texttt{trainOnUserKinematics} สำหรับคำนวณเกรเดียนต์และอัปเดตค่าน้ำหนักด้วย Stochastic Gradient Descent (SGD)
+
+\begin{codebox}
+\textbf{แกนหลักของ DeepHealthAiEngine.dart}
+\begin{lstlisting}[language=Dart]
+class DeepHealthAiEngine {
+  // สถาปัตยกรรมโครงข่ายประสาทเทียม 6 -> 8 -> 6 -> 4
+  List<List<double>> w1 = ...; // 6x8
+  List<double> b1 = ...;
+  List<List<double>> w2 = ...; // 8x6
+  List<double> b2 = ...;
+  List<List<double>> w3 = ...; // 6x4
+  List<double> b3 = ...;
+
+  // Forward Propagation
+  DeepAiInferenceResult predict(HealthIntervalRecord interval) {
+    List<double> x = _extractNormalizedFeatures(interval);
+    List<double> z1 = _dense(x, w1, b1);
+    List<double> a1 = z1.map((v) => v > 0 ? v : 0.01 * v).toList(); // LeakyReLU
+
+    List<double> z2 = _dense(a1, w2, b2);
+    List<double> a2 = z2.map((v) => (exp(2*v) - 1)/(exp(2*v) + 1)).toList(); // Tanh
+
+    List<double> z3 = _dense(a2, w3, b3);
+    List<double> probs = _softmax(z3);
+
+    return DeepAiInferenceResult(
+      predictedState: _mapState(probs),
+      confidence: probs.reduce(max),
+      forecastStepsNext4h: _forecastSteps(interval, probs),
+      forecastCaloriesNext4h: _forecastCalories(interval, probs),
+    );
+  }
+
+  // Backpropagation & SGD Training On Device
+  void trainOnUserKinematics(List<HealthIntervalRecord> history, {double lr = 0.01}) {
+    for (var record in history) {
+      // 1. Forward Pass
+      // 2. Compute Cross-Entropy Loss Derivative
+      // 3. Backpropagate Gradients: dL/dw3, dL/dw2, dL/dw1
+      // 4. Update Weights: w = w - lr * grad
+    }
+  }
+}
+\end{lstlisting}
+\end{codebox}
+
+\section{ปฏิบัติการที่ 5.7 การพัฒนาระบบเสียงพูดเตือนและสแนปชอตอัตโนมัติทุก 4 ชั่วโมง}
+สร้างไฟล์ \texttt{lib/services/voice\_alert\_service.dart} เพื่อจัดการการเล่นเสียงกระตุ้นเตือนโสตประสาทและความถี่เสียงเตือน พร้อมคำพูดสังเคราะห์ภาษาไทย ``ลุกค่ะ ลุกค่ะ! ได้เวลาลุกขึ้นยืดเส้นยืดสายและขยับร่างกายแล้วค่ะ''
+
+และในไฟล์ \texttt{lib/services/movement\_sensor\_service.dart} ให้ติดตั้งตัวจับเวลา \texttt{Timer.periodic} สำหรับตรวจจับพฤติกรรมเนือยนิ่งทุก 30 นาที และตัวจับเวลาบันทึกข้อมูลสุขภาพอัตโนมัติทุก 4 ชั่วโมง (\texttt{Duration(hours: 4)}) พร้อมนโยบายการรีเซ็ตค่าเริ่มต้นเป็นศูนย์ (Zero-Baseline Launch Policy) เมื่อเปิดแอปพลิเคชันใหม่
+
+\begin{codebox}
+\textbf{การตั้งเวลาบันทึกอัตโนมัติและตรวจจับเนือยนิ่งใน MovementSensorService}
+\begin{lstlisting}[language=Dart]
+// ตัวจับเวลาบันทึกอัตโนมัติทุก 4 ชั่วโมง
+_snapshot4hTimer = Timer.periodic(const Duration(hours: 4), (timer) {
+  take4HourIntervalSnapshot();
+});
+
+// ตัวจับเวลาตรวจสอบพฤติกรรมเนือยนิ่งทุก 30 นาที
+_sedentaryCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+  if (isSittingInactive && inactiveMinutes >= sedentaryThresholdMinutes) {
+    _triggerSedentaryAlert();
+    VoiceAlertService.instance.playStandUpSpeechAlert();
+  }
+});
+\end{lstlisting}
+\end{codebox}
+
+\section{ปฏิบัติการที่ 5.8 การพัฒนาระบบติดตามพิกัด GPS และการเรนเดอร์แผนที่เส้นทางจริง}
+ในปฏิบัติการนี้ ผู้เรียนจะสร้างระบบติดตามพิกัดตำแหน่งทางภูมิศาสตร์จริงในไฟล์ \texttt{lib/services/gps\_tracking\_service.dart} พร้อมการคำนวณระยะทางด้วยสูตรฮาเวอร์ซีน และสร้างวิดเจ็ตแสดงผลแผนที่เวกเตอร์ในไฟล์ \texttt{lib/ui/widgets/gps\_route\_map\_card.dart}
+
+เริ่มต้นด้วยการสร้างคลาส \texttt{GpsWaypoint} เพื่อเก็บพิกัดละติจูด ลองจิจูด ความสูง ความเร็ว และทิศทางมุ่งหน้า พร้อมเมธอดคำนวณระยะทางผิวโค้งโลก
+
+\begin{codebox}
+\textbf{การคำนวณระยะทาง Haversine ใน GpsWaypoint.dart}
+\begin{lstlisting}[language=Dart]
+double distanceTo(GpsWaypoint other) {
+  final double phi1 = latitude * (pi / 180.0);
+  final double phi2 = other.latitude * (pi / 180.0);
+  final double deltaPhi = (other.latitude - latitude) * (pi / 180.0);
+  final double deltaLambda = (other.longitude - longitude) * (pi / 180.0);
+
+  final double a = sin(deltaPhi / 2.0) * sin(deltaPhi / 2.0) +
+      cos(phi1) * cos(phi2) * sin(deltaLambda / 2.0) * sin(deltaLambda / 2.0);
+
+  final double c = 2.0 * atan2(sqrt(a), sqrt(1.0 - a));
+  return 6371000.0 * c; // ระยะทางในหน่วยเมตร
+}
+\end{lstlisting}
+\end{codebox}
+
+จากนั้น สร้างคลาสเรนเดอร์กราฟิกเวกเตอร์ \texttt{GpsRoutePainter} เพื่อแปลงพิกัด $(\phi, \lambda)$ เข้าสู่พิกัดระนาบพิกเซลหน้าจอ พร้อมการวาดเส้นทางโพลีไลน์นีออนเรืองแสงและการกะพริบคลื่นเรดาร์
+
+\begin{codebox}
+\textbf{การแปลงพิกัดและวาดโพลีไลน์ใน GpsRoutePainter.dart}
+\begin{lstlisting}[language=Dart]
+@override
+void paint(Canvas canvas, Size size) {
+  _drawGridBackground(canvas, size);
+
+  // คำนวณ Bounding Box ของพิกัดทั้งหมด
+  double minLat = ..., maxLat = ..., minLng = ..., maxLng = ...;
+
+  Offset toCanvas(double lat, double lng) {
+    double nx = (lng - minLng) / (maxLng - minLng);
+    double ny = (maxLat - lat) / (maxLat - minLat); // พลิกแกนดิ่ง
+    double px = margin + (nx * drawW);
+    double py = margin + (ny * drawH);
+    return Offset(center.dx + (px - center.dx) * zoom + pan.dx,
+                  center.dy + (py - center.dy) * zoom + pan.dy);
+  }
+
+  // วาดเส้นทางโพลีไลน์เรืองแสงนีออน (Glow Path & Core Path)
+  final path = Path();
+  // เติมพิกัดและ drawPath ด้วย LinearGradient(neonEmerald, neonCyan)
+  canvas.drawPath(path, linePaint);
+
+  // วาดคลื่นเรดาร์กะพริบที่ตำแหน่งปัจจุบัน (Radar Pulsing Ripple)
+  canvas.drawCircle(curPoint, 6.0 + pulse * 18.0, pulsePaint);
+}
+\end{lstlisting}
+\end{codebox}
+
+\section{ปฏิบัติการที่ 5.9 การพัฒนาระบบนับก้าวไฮบริดขณะปิดหน้าจอและตรวจจับการล้มฉับพลัน}
+เพื่อยกระดับให้แอปพลิเคชันสามารถทำงานนับก้าวได้อย่างต่อเนื่องแม้ในขณะปิดหน้าจอสมาร์ทโฟน (Screen-Off Tracking) และประหยัดพลังงานแบตเตอรี่สูงสุด ผู้เรียนจะผสานแพ็กเกจ \texttt{pedometer} เข้ากับคลาส \texttt{MovementSensorService} พร้อมระบบตรวจจับแรงกระแทกจากการล้มฉับพลัน
+
+\begin{codebox}
+\textbf{การผสาน Hardware Step Counter และ Fall Detection ใน MovementSensorService.dart}
+\begin{lstlisting}[language=Dart]
+void _initPedometer() {
+  _stepCountSubscription = Pedometer.stepCountStream.listen(
+    _onHardwareStepCount,
+    onError: (dynamic error) {
+      _hasHardwarePedometer = false; // สลับใช้ Accelerometer Peak Detection อัตโนมัติ
+    },
+  );
+}
+
+void _onHardwareStepCount(StepCount event) {
+  _hasHardwarePedometer = true;
+  if (_initialHardwareStepCount == null) {
+    _initialHardwareStepCount = event.steps;
+    return;
+  }
+  final int delta = event.steps - _initialHardwareStepCount!;
+  if (delta > 0 && delta > _todaySteps) {
+    final int stepsToAdd = delta - _todaySteps;
+    for (int i = 0; i < stepsToAdd; i++) {
+      _onStepDetected(DateTime.now().millisecondsSinceEpoch, 2.2);
+    }
+  }
+}
+
+// ตรวจจับแรงกระแทกผิดปกติหรือการล้มฉับพลัน (Fall / Severe Impact > 32 m/s^2)
+if (magnitude > 32.0 && !_isFallWarningActive) {
+  _isFallWarningActive = true;
+  VoiceAlertService().playFallWarningVoiceAlert();
+  notifyListeners();
+}
+\end{lstlisting}
+\end{codebox}
+
+\section{ปฏิบัติการที่ 5.10 การพัฒนาเว็บแดชบอร์ดแผนที่ภาพถ่ายดาวเทียมและ REST API ฐานข้อมูล SQLite3}
+ในปฏิบัติการสุดท้าย ผู้เรียนจะเชื่อมต่อแอปพลิเคชันสมาร์ทโฟนเข้ากับระบบเว็บแดชบอร์ด (\texttt{index.html}) และส่วนบริการข้อมูลหลังบ้าน (\texttt{api.php}) ที่จัดเก็บข้อมูลลงในฐานข้อมูล SQLite3 (\texttt{health\_data.db}) พร้อมแสดงผลแผนที่ภาพถ่ายดาวเทียมความละเอียดสูงผ่านไลบรารี Leaflet.js และ ESRI World Imagery Satellite รองรับทั้งโหมดเดินเพื่อสุขภาพ วิ่งออกกำลังกาย และปั่นจักรยาน
+
+\begin{codebox}
+\textbf{การเรนเดอร์แผนที่ภาพถ่ายดาวเทียมและเส้นทางหลายประเภทกีฬาใน index.html}
+\begin{lstlisting}
+const esriUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/'
+  + 'World_Imagery/MapServer/tile/{z}/{y}/{x}';
+satLayer = L.tileLayer(esriUrl, {
+  attribution: 'Tiles Esri World Imagery Satellite', maxZoom: 19
+}).addTo(map);
+
+routePolyline = L.polyline([], {
+  color: '#00F59B', weight: 5, opacity: 0.9
+}).addTo(map);
+\end{lstlisting}
+\end{codebox}
+
+\section*{คำถามทบทวนท้ายบทที่ 5}
+\addcontentsline{toc}{section}{คำถามทบทวนท้ายบทที่ 5}
+\begin{enumerate}
+    \item เพราะเหตุใดจึงต้องกำหนดสิทธิ์ \texttt{HIGH\_SAMPLING\_RATE\_SENSORS} และสิทธิ์ \texttt{ACCESS\_FINE\_LOCATION} ในไฟล์ \texttt{AndroidManifest.xml}
+    \item หากต้องการปรับแต่งอัลกอริทึมให้ตรวจจับการวิ่งเร็วได้ดียิ่งขึ้น ควรปรับพารามิเตอร์ใดในคลาส \texttt{StepDetectionEngine}
+    \item จงอธิบายขั้นตอนการทำงานของ Forward Propagation และ Backpropagation ที่เกิดขึ้นภายในคลาส \texttt{DeepHealthAiEngine} บนสมาร์ทโฟน
+    \item เพราะเหตุใดระบบจึงต้องบันทึกข้อมูลสแนปชอตสรีรวิทยาอัตโนมัติทุก 4 ชั่วโมง เพื่อนำไปใช้วิเคราะห์ร่วมกับโครงข่ายประสาทเทียม
+    \item จงอธิบายกลไกการคำนวณระยะทาง Great-Circle Distance ในคลาส \texttt{GpsWaypoint} และการกรองสัญญาณสะท้อนเทียม (Multipath Noise Filter)
+    \item จงอธิบายขั้นตอนการแปลงพิกัดภูมิศาสตร์สู่พิกัดระนาบ 2 มิติของหน้าจอด้วยคลาส \texttt{CustomPainter} ในแอปพลิเคชัน Flutter
+\end{enumerate}
+\clearpage

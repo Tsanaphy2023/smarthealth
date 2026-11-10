@@ -1,0 +1,216 @@
+\chapter{การออกแบบสถาปัตยกรรมส่วนติดต่อผู้ใช้แบบ Bento Grid และ Adaptive Layout}
+\label{chap:ch04}
+
+\section*{แผนบริหารการสอนประจำบทที่ 4}
+\addcontentsline{toc}{section}{แผนบริหารการสอนประจำบทที่ 4}
+
+\noindent\textbf{หัวข้อเนื้อหาประจำบท}
+\begin{enumerate}
+    \item วิวัฒนาการและแนวคิดสถาปัตยกรรมส่วนต่อประสานผู้ใช้แบบ Bento Grid
+    \item การออกแบบลำดับขั้นการรับรู้ทางสายตาและการใช้โทนสีคอนทราสต์สูง
+    \item ระบบจุดตัดขนาดหน้าจอแบบตอบสนองอัตโนมัติ (Adaptive Responsive Breakpoints)
+    \item เทคนิควิศวกรรมการป้องกันปัญหาการแสดงผลล้นหน้าจอ (Overflow Prevention)
+    \item การออกแบบและผสานภาพกราฟิกลายเส้นนีออนสไตล์ไซเบอร์เนติก
+    \item จิตวิทยาการตอบสนองเชิงจลน์และวงรอบแรงจูงใจในการออกกำลังกาย
+\end{enumerate}
+
+\noindent\textbf{วัตถุประสงค์เชิงพฤติกรรม}
+\begin{enumerate}
+    \item อธิบายหลักการจัดวางเนื้อหาแบบกล่องเบนโตะ (Bento Grid Layout) ได้อย่างถูกต้อง
+    \item ออกแบบและกำหนดจุดตัดขนาดหน้าจอ (Breakpoints) สำหรับอุปกรณ์พกพาขนาดต่างๆ ได้อย่างถูกต้อง
+    \item ประยุกต์ใช้เทคนิควิศวกรรมเลย์เอาต์ของ Flutter เพื่อป้องกัน RenderFlex Overflow ได้อย่างสมบูรณ์
+    \item เลือกใช้คู่สีนีออนคอนทราสต์สูงเพื่อเสริมสร้างความชัดเจนในการอ่านข้อมูลสุขภาพตามมาตรฐาน WCAG ได้อย่างถูกต้อง
+\end{enumerate}
+
+\noindent\textbf{กิจกรรมการเรียนการสอน}
+\begin{enumerate}
+    \item การวิเคราะห์กรณีศึกษาส่วนติดต่อผู้ใช้ของแอปพลิเคชันระดับโลก (Apple Health, Nike Run, Strava)
+    \item การทดลองจำลองหน้าจอด้วยขนาดความกว้างต่างๆ บน Flutter DevTools เพื่อตรวจหาจุดบกพร่องการจัดวาง
+    \item ปฏิบัติการเขียนโค้ดวิดเจ็ต \texttt{LayoutBuilder} และ \texttt{Wrap} สำหรับจัดการ Bento Grid
+    \item การอภิปรายกลุ่มและการตอบคำถามทบทวนท้ายบท
+\end{enumerate}
+
+\noindent\textbf{สื่อการเรียนการสอน}
+\begin{enumerate}
+    \item เอกสารคำสอนบทที่ 4 การออกแบบ Bento Grid และ Adaptive Layout
+    \item คอมพิวเตอร์ติดตั้ง Flutter SDK, VS Code และโปรแกรมตรวจจับเลย์เอาต์
+    \item ภาพประกอบชุด Bento Cards และชุดไอคอนลายเส้นนีออนดิจิทัล
+\end{enumerate}
+
+\noindent\textbf{การประเมินผล}
+\begin{enumerate}
+    \item การประเมินผลสัมฤทธิ์จากการออกแบบโครงสร้างเลย์เอาต์หน้าจอ
+    \item การตรวจความถูกต้องของการทดสอบแอปพลิเคชันบนขนาดหน้าจอที่มีความกว้างหลากหลาย
+    \item การประเมินคำตอบจากคำถามทบทวนท้ายบทที่ 4
+\end{enumerate}
+
+\newpage
+
+\section{แนวคิดสถาปัตยกรรมส่วนต่อประสานผู้ใช้แบบ Bento Grid}
+ในยุคปัจจุบัน ผู้ใช้งานสมาร์ทโฟนต้องการเข้าถึงข้อมูลสำคัญได้อย่างรวดเร็วในชั่วพริบตา (Glanceable UI) การออกแบบแดชบอร์ดสุขภาพในอดีตที่ใช้รายการเลื่อนเรียงแถวยาว (Long Scrollable List) ทำให้ผู้ใช้ต้องกวาดสายตาค้นหาข้อมูลที่กระจัดกระจายและเกิดความล้าทางสายตา
+
+แนวคิดการออกแบบแบบ \textbf{Bento Grid} ได้รับแรงบันดาลใจจากกล่องข้าวเบนโตะของญี่ปุ่น ซึ่งมีการจัดแบ่งช่องสี่เหลี่ยมขนาดเล็กใหญ่ที่มีสัดส่วนกลมกลืนกันเพื่อบรรจุอาหารแต่ละชนิดอย่างเป็นระเบียบ เมื่อนำมาประยุกต์ใช้กับแดชบอร์ดสุขภาพ ข้อมูลแต่ละมิติจะถูกบรรจุลงใน \textbf{Metric Cards} ที่มีขนาดแตกต่างกันตามระดับความสำคัญ (Visual Hierarchy)
+
+\begin{enumerate}
+    \item \textbf{Hero Card (การ์ดหลักขนาดใหญ่)} แสดงจำนวนก้าวเดินสด วงแหวนความคืบหน้านีออน และปุ่มควบคุมหลัก
+    \item \textbf{Secondary Cards (การ์ดรองขนาดกลาง)} แสดงอัตราความถี่ก้าว (Cadence SPM) ระยะทางกิโลเมตร และพลังงานแคลอรี
+    \item \textbf{Micro Cards (การ์ดสนับสนุนขนาดกะทัดรัด)} แสดงสถานะการดื่มน้ำ (Hydration) ดัชนีการเผาผลาญพื้นฐาน (BMR) และเวลาการนั่งนิ่ง
+\end{enumerate}
+
+\section{การออกแบบสีและคอนทราสต์ตามมาตรฐาน WCAG}
+แอปพลิเคชัน Smart Health Tracker เลือกใช้ธีมมืดระดับพรีเมียม (Deep Charcoal \& Obsidian Tech Background, \texttt{\#121212}) ร่วมกับคู่สีนีออนเรืองแสงสูง (High-Luminance Neon Accents)
+
+\begin{table}[H]
+\centering
+\caption{จานสีมาตรฐานและการจัดกลุ่มสัญญาณภาพของระบบ Smart Health Tracker}
+\label{tab:color_palette}
+\small
+\begin{tabularx}{\textwidth}{|l|c|c|X|}
+\toprule
+\textbf{ชื่อตัวแปรสี} & \textbf{รหัสสี HEX} & \textbf{อัตราคอนทราสต์} & \textbf{ความหมายทางสรีรวิทยาและข้อมูล} \\
+\midrule
+\texttt{neonCyan} & \texttt{\#00E5FF} & $14.2:1$ & ข้อมูลก้าวเดินหลักและระบบเซนเซอร์คลื่นความเร่ง \\
+\texttt{neonGreen} & \texttt{\#00E676} & $13.8:1$ & อัตราความถี่ก้าว (Cadence) และภาวะแอโรบิกสมบูรณ์ \\
+\texttt{neonOrange} & \texttt{\#FF9100} & $9.6:1$ & พลังงานความร้อนกิโลแคลอรีและการเผาผลาญไขมัน \\
+\texttt{neonPurple} & \texttt{\#D500F9} & $8.4:1$ & ข้อมูลระยะทางและสัดส่วนความยาวก้าวชีวกลศาสตร์ \\
+\texttt{neonBlue} & \texttt{\#2979FF} & $10.1:1$ & ปริมาณน้ำบริสุทธิ์และสมดุลของเหลวในร่างกาย \\
+\texttt{alertRed} & \texttt{\#FF1744} & $7.9:1$ & การแจ้งเตือนพฤติกรรมเนือยนิ่งและการนั่งนานเกิน 1 ชั่วโมง \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+ทุกคู่สีผ่านเกณฑ์มาตรฐานการเข้าถึงเว็บระดับสูงสุด (WCAG 2.1 AAA) ซึ่งกำหนดอัตราคอนทราสต์ของข้อความขนาดใหญ่ไว้ไม่ต่ำกว่า $4.5:1$ และข้อความปกติไม่ต่ำกว่า $7.0:1$ ทำให้ผู้ใช้สามารถมองเห็นตัวเลขได้อย่างคมชัดแม้ในขณะวิ่งกลางแจ้งที่มีแสงแดดจ้า
+
+\section{ระบบจุดตัดขนาดหน้าจอแบบตอบสนองอัตโนมัติ}
+เนื่องจากอุปกรณ์สมาร์ทโฟนและแท็บเล็ตในระบบปฏิบัติการแอนดรอยด์มีความหลากหลายทางกายภาพของขนาดหน้าจอ (Device Fragmentation) สูงมาก ตั้งแต่สมาร์ทโฟนจอประหยัดที่มีความกว้างต่ำกว่า $360\text{ dp}$ จนถึงสมาร์ทโฟนเรือธง จอพับได้ (Foldable) และแท็บเล็ต
+
+ระบบ Smart Health Tracker จึงได้ออกแบบระบบจำแนกจุดตัดขนาดหน้าจอ (Adaptive Responsive Breakpoints) ออกเป็น 3 ระดับอย่างเคร่งครัด
+
+\begin{codebox}
+\textbf{การจำแนกระดับหน้าจอด้วยวิดเจ็ต LayoutBuilder}
+\begin{lstlisting}[language=Dart]
+Widget build(BuildContext context) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final double width = constraints.maxWidth;
+      if (width < 360) {
+        return buildCompactMobileLayout(); // จอแคบ: การ์ดเรียงเดี่ยว 1 คอลัมน์
+      } else if (width < 600) {
+        return buildStandardMobileLayout(); // จอมาตรฐาน: Bento Grid 2 คอลัมน์
+      } else {
+        return buildExpandedTabletLayout(); // จอแท็บเล็ต/จอพับ: ตารางกว้าง 3-4 คอลัมน์
+      }
+    },
+  );
+}
+\end{lstlisting}
+\end{codebox}
+
+\section{เทคนิควิศวกรรมการป้องกันปัญหาเลย์เอาต์ล้นจอ}
+ข้อผิดพลาดที่พบบ่อยที่สุดในการพัฒนาแอปพลิเคชันมือถือคือ \textbf{RenderFlex Overflowed by xxx Pixels} ซึ่งเกิดจากการที่วิดเจ็ตลูกภายใน \texttt{Row} หรือ \texttt{Column} มีขนาดคงที่ (Fixed Width/Height) และขยายตัวเกินขอบเขตพิกเซลที่หน้าจอจริงสามารถเรนเดอร์ได้
+
+ในระบบ Smart Health Tracker ผู้วิจัยได้นำหลักวิศวกรรมซอฟต์แวร์เข้ามาควบคุม 3 ประการ
+\begin{enumerate}
+    \item \textbf{การห่อหุ้มชั้นนอกสุดด้วย SingleChildScrollView} เสมอ เพื่อรับประกันว่าในกรณีที่หน้าจอมีความสูงจำกัด (เช่น การเปิดคีย์บอร์ดเสมือน หรือการใช้งานแนวนอน) ผู้ใช้จะยังคงสามารถเลื่อนดูเนื้อหาทั้งหมดได้อย่างราบรื่น
+    \item \textbf{การจัดสัดส่วนการ์ดด้วย Expanded และ Flex Ratio} แทนการระบุความกว้างแบบคงที่ ทำให้การ์ดทั้งสองฝั่งในระบบกริดหดและขยายตัวตามสัดส่วนพื้นที่หน้าจอจริงอย่างอิสระ
+    \item \textbf{การจำกัดความยาวของข้อความด้วย TextOverflow.ellipsis} พร้อมการกำหนด \texttt{maxLines: 1} ในแถบหัวข้อและป้ายสถานะ เพื่อป้องกันไม่ให้ข้อความยาวกระแทกขอบจนโครงสร้างพังทลาย
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.88]
+  % Screen Outline
+  \draw[draw=white!50, fill=black!90, rounded corners=12pt, line width=1.5pt] (0, 0) rectangle (10, 11);
+
+  % Notch
+  \fill[fill=black!50, rounded corners=3pt] (3.8, 10.6) rectangle (6.2, 10.85);
+
+  % Header
+  \node[anchor=west, text=white] at (0.6, 10.2) {\textbf{\fontsize{11}{13}\selectfont SMART HEALTH TRACKER}};
+  \node[anchor=east, text=rbruEmerald] at (9.4, 10.2) {\textbf{\fontsize{9}{11}\selectfont LIVE 50Hz}};
+
+  % Bento Hero Card (Steps)
+  \draw[draw=rbruCyan, fill=rbruNavy!60, rounded corners=8pt, line width=1.2pt] (0.6, 6.2) rectangle (9.4, 9.6);
+  \node[anchor=north west, text=rbruCyan] at (0.9, 9.3) {\textbf{\scriptsize ก้าวเดินวันนี้ (DAILY STEPS)}};
+  \node[anchor=center, text=white] at (3.5, 7.8) {\textbf{\fontsize{24}{28}\selectfont 8,420}};
+  \node[anchor=west, text=gray!70] at (5.8, 7.6) {\scriptsize เป้าหมาย 10,000 ก้าว};
+  \draw[draw=rbruCyan!40, line width=6pt] (1.0, 6.7) -- (9.0, 6.7);
+  \draw[draw=rbruCyan, line width=6pt] (1.0, 6.7) -- (7.7, 6.7);
+
+  % Bento Row 2: Cadence & Calories
+  \draw[draw=rbruEmerald, fill=rbruNavy!40, rounded corners=6pt, line width=1pt] (0.6, 3.8) rectangle (4.7, 5.9);
+  \node[anchor=north west, text=rbruEmerald] at (0.8, 5.7) {\textbf{\scriptsize จังหวะก้าว (CADENCE)}};
+  \node[anchor=center, text=white] at (2.65, 4.8) {\textbf{\fontsize{16}{18}\selectfont 115 SPM}};
+  \node[anchor=south, text=rbruEmerald!80] at (2.65, 4.0) {\tiny Moderate Aerobic};
+
+  \draw[draw=rbruOrange, fill=rbruNavy!40, rounded corners=6pt, line width=1pt] (5.3, 3.8) rectangle (9.4, 5.9);
+  \node[anchor=north west, text=rbruOrange] at (5.5, 5.7) {\textbf{\scriptsize พลังงาน (CALORIES)}};
+  \node[anchor=center, text=white] at (7.35, 4.8) {\textbf{\fontsize{16}{18}\selectfont 425 kcal}};
+  \node[anchor=south, text=rbruOrange!80] at (7.35, 4.0) {\tiny Active METs 3.8};
+
+  % Bento Row 3: Stride Distance & Hydration
+  \draw[draw=purple!70, fill=rbruNavy!40, rounded corners=6pt, line width=1pt] (0.6, 1.4) rectangle (4.7, 3.5);
+  \node[anchor=north west, text=purple!80] at (0.8, 3.3) {\textbf{\scriptsize ระยะทาง (DISTANCE)}};
+  \node[anchor=center, text=white] at (2.65, 2.4) {\textbf{\fontsize{16}{18}\selectfont 6.25 km}};
+  \node[anchor=south, text=purple!60] at (2.65, 1.6) {\tiny Stride 74.2 cm};
+
+  \draw[draw=rbruBlue!80, fill=rbruNavy!40, rounded corners=6pt, line width=1pt] (5.3, 1.4) rectangle (9.4, 3.5);
+  \node[anchor=north west, text=rbruBlue!90] at (5.5, 3.3) {\textbf{\scriptsize สมดุลน้ำ (HYDRATION)}};
+  \node[anchor=center, text=white] at (7.35, 2.4) {\textbf{\fontsize{16}{18}\selectfont 1,850 mL}};
+  \node[anchor=south, text=rbruBlue!70] at (7.35, 1.6) {\tiny Goal 2,400 mL};
+
+  % Bottom Action Button
+  \draw[draw=rbruEmerald, fill=rbruEmerald!90, rounded corners=6pt] (1.5, 0.4) rectangle (8.5, 1.1);
+  \node[text=black] at (5.0, 0.75) {\textbf{\small เริ่มต้นกิจกรรม (START TRACKING)}};
+\end{tikzpicture}
+\caption{สถาปัตยกรรมการจัดวางหน้าจอแบบ Bento Grid ของระบบ Smart Health Tracker}
+\label{fig:bento_grid_architecture}
+\end{figure}
+
+\section{การออกแบบการ์ดวิเคราะห์ปัญญาประดิษฐ์เชิงลึกและไทม์ไลน์ 4 ชั่วโมง}
+เพื่อรองรับความต้องการด้านการวิเคราะห์ข้อมูลขั้นสูงโดยไม่รบกวนความต่อเนื่องของสายตา ระบบได้ผสาน \textbf{Deep AI Analytics Card} เข้าสู่ Bento Grid ซึ่งประกอบด้วยองค์ประกอบย่อย 4 ส่วน
+\begin{enumerate}
+    \item \textbf{แผงสถานะการจำแนกสภาพความล้าและความสมดุล (AI Health State Header)} แสดงระดับความล้าทางชีวกลศาสตร์ (ปกติ, ล้าปานกลาง, ล้าสะสมรุนแรง, หรือสมดุลบกพร่อง) พร้อมเปอร์เซ็นต์ความเชื่อมั่น (Softmax Probability) และสีนีออนบ่งชี้สถานะ
+    \item \textbf{การพยากรณ์ล่วงหน้า 4 ชั่วโมงถัดไป (Next 4-Hour Predictive Metrics)} นำเสนอการประเมินก้าวเดินและแคลอรีที่คาดว่าจะเกิดขึ้นในช่วงเวลาต่อไป เพื่อช่วยให้ผู้ใช้จัดสรรการเคลื่อนไหวร่างกายได้อย่างสมดุล
+    \item \textbf{หน้าปัดโทรมาตรโครงข่ายประสาทสด (Live Neural Telemetry Gauge)} แสดงค่าอินพุตเวกเตอร์ทั้ง 6 มิติ ค่าสถานะฮิดเดนเลเยอร์ และจำนวนพารามิเตอร์ของโมเดล ทำให้ผู้เรียนสามารถมองเห็นการทำงานภายใน (Explainable AI) ได้อย่างโปร่งใส
+    \item \textbf{ปุ่มปฏิบัติการบันทึกสแนปชอตและการฝึกฝนบนเครื่อง (Action Controls)} ประกอบด้วยปุ่มบันทึกข้อมูล 4 ชั่วโมงแบบแมนนวล และปุ่มฝึกฝนโมเดลบนอุปกรณ์ (Train Deep Model On-Device) ซึ่งเรียกใช้กระบวนการ Backpropagation และ Stochastic Gradient Descent แบบเรียลไทม์
+\end{enumerate}
+
+นอกจากนี้ ใต้ระบบ Bento Grid ยังมีส่วนแสดงผล \textbf{4-Hour Interval Snapshot Timeline} ซึ่งแสดงประวัติข้อมูลย้อนหลังในรูปแบบการ์ดไทม์ไลน์แนวนอน ช่วยให้ผู้ใช้สามารถติดตามแนวโน้มความล้าและพฤติกรรมก้าวเดินในแต่ละช่วงวันได้อย่างชัดเจน
+
+\section{สถาปัตยกรรมไดอะล็อกตั้งค่าเป้าหมายและพารามิเตอร์สุขภาพ}
+เพื่อความสะดวกในการปรับแต่งค่าเฉพาะบุคคล ระบบได้ออกแบบ \textbf{Comprehensive Goals Dialog} ซึ่งเป็นหน้าต่างเลเยอร์ระดับบน (Modal Dialog) ที่แบ่งการตั้งค่าออกเป็น 3 แท็บอย่างเป็นหมวดหมู่
+\begin{enumerate}
+    \item \textbf{แท็บเป้าหมายรายวัน (Daily Goals)} กำหนดจำนวนก้าวเป้าหมาย (Steps Goal) และปริมาณน้ำดื่มเป้าหมาย (Water Goal)
+    \item \textbf{แท็บเป้าหมายลดน้ำหนัก (Weight Loss)} กำหนดน้ำหนักเป้าหมาย และอัตราการพร่องพลังงาน (Calorie Deficit) พร้อมแสดงการประเมินระยะเวลาความสำเร็จและอัตราการลดน้ำหนักต่อสัปดาห์แบบไดนามิก
+    \item \textbf{แท็บแจ้งเตือนสุขภาพและเสียงสังเคราะห์ (Health \& Alerts)} กำหนดช่วงเวลาตรวจจับพฤติกรรมเนือยนิ่ง (15, 30, 45 หรือ 60 นาที) สวิตช์เปิดปิดเสียงพูดภาษาไทยสังเคราะห์ ``ลุกค่ะ ลุกค่ะ'' ปุ่มทดสอบเสียงพูด และปุ่มรีเซ็ตระบบเป็นศูนย์ (Reset All to 0)
+\end{enumerate}
+
+\section{การออกแบบการ์ดแผนที่เส้นทางจริงด้วยระบบเวกเตอร์คัสตอมเพนเตอร์}
+หนึ่งในข้อจำกัดของการแสดงผลแผนที่ดาวเทียมแบบดั้งเดิม (เช่น Google Maps หรือ Mapbox) บนแอปพลิเคชันมือถือ คือการใช้ทรัพยากรหน่วยความจำและการดาวน์โหลดไทล์ภาพ (Map Tiles) ปริมาณมหาศาล ซึ่งส่งผลให้อัตราการสิ้นเปลืองพลังงานแบตเตอรี่พุ่งสูงและเกิดอาการกระตุก (UI Lag)
+
+ทีมวิจัยจึงได้ออกแบบ \textbf{GpsRouteMapCard} โดยใช้ระบบเรนเดอร์เวกเตอร์อิสระผ่านคลาส \texttt{CustomPainter} ของ Flutter ซึ่งประมวลผลบนการ์ดจอโดยตรง (GPU Acceleration) มีองค์ประกอบทางวิศวกรรมเลย์เอาต์ดังนี้
+
+\begin{enumerate}
+    \item \textbf{การแปลงพิกัดภูมิศาสตร์สู่พิกัดผืนผ้าใบแบบปรับตัว (Adaptive Geodesic Viewport Mapping)} ระบบจะคำนวณกรอบขอบเขตพิกัด ($\text{Bounding Box: } [\phi_{\min}, \phi_{\max}] \times [\lambda_{\min}, \lambda_{\max}]$) ของทุกจุดที่บันทึกได้ แล้วแปลงสัดส่วนให้อยู่ในระนาบพิกเซลหน้าจอตามขนาดกว้างยาวของหน้าจออย่างแม่นยำ พร้อมทั้งรองรับการซูม ($\text{Zoom Factor: } 0.5\times - 5.0\times$) และการเลื่อนมุมมอง (Pan Gesture)
+    \item \textbf{การวาดเส้นทางโพลีไลน์แบบเรืองแสง 2 ชั้น (Dual-Layer Neon Glow Route)} วาดเส้นทางแกนหลักด้วยเกรเดียนต์สีนีออนเขียวสลับฟ้า (\texttt{\#00E676} $\to$ \texttt{\#00E5FF}) ซ้อนทับด้วยเส้นเรืองแสงรอบนอก (Outer Blur Glow) เพื่อสร้างมิติสายตาที่เด่นชัดบนพื้นหลังสีรัตติกาล
+    \item \textbf{สัญญาณบีคอนเรดาร์กะพริบคลื่นชีพจร (Pulsating Radar Beacon)} แสดงตำแหน่งปัจจุบันของผู้ใช้ด้วยวงแหวนคลื่นเรดาร์แอนิเมชันขยายตัวแบบคาบเวลา ($1.6\text{ วินาที}$) พร้อมลูกศรระบุทิศทางเข็มทิศ (Heading Azimuth) ตามองศาที่ผู้ใช้กำลังมุ่งหน้าจริง
+    \item \textbf{แผงข้อมูลโทรมาตรการเดินทางสด (Telemetry HUD Bar)} แสดงผลระยะทาง GPS ควบคู่กับระยะทางจากตัวนับก้าวเพื่อการเปรียบเทียบความแม่นยำ, ความเร็วเรียลไทม์, เพซความเร็ว (นาทีต่อกิโลเมตร), และความสูงสะสม
+\end{enumerate}
+
+\section{จิตวิทยาการตอบสนองเชิงจลน์และวงรอบแรงจูงใจ}
+การออกแบบส่วนติดต่อผู้ใช้สำหรับพฤติกรรมสุขภาพ จำเป็นต้องคำนึงถึงทฤษฎีการกระตุ้นพฤติกรรม (Fogg Behavior Model: $B = MAP$) ซึ่งระบุว่าพฤติกรรมจะเกิดขึ้นเมื่อมีแรงจูงใจ (Motivation) ความสามารถที่กระทำได้ง่าย (Ability) และตัวกระตุ้นที่เหมาะสม (Prompt)
+
+ระบบ Smart Health Tracker นำเสนอตัวกระตุ้นเชิงบวกผ่านภาพเคลื่อนไหวนีออนขนาดเล็ก (Micro-Animations) เช่น การหมุนวนของวงแหวนก้าวเดินเมื่อมีก้าวใหม่ และการกระเพื่อมของแถบคลื่นน้ำเมื่อผู้ใช้กดบันทึกการดื่มน้ำ สิ่งเหล่านี้ส่งสัญญาณรางวัล (Dopamine Feedback Loop) สู่ระบบประสาทของผู้ใช้ ทำให้เกิดความพึงพอใจและมีแนวโน้มที่จะรักษาวินัยในการเคลื่อนไหวร่างกายอย่างต่อเนื่อง
+
+\section*{คำถามทบทวนท้ายบทที่ 4}
+\addcontentsline{toc}{section}{คำถามทบทวนท้ายบทที่ 4}
+\begin{enumerate}
+    \item จงอธิบายจุดเด่นของสถาปัตยกรรมส่วนติดต่อผู้ใช้แบบ Bento Grid เมื่อเทียบกับแดชบอร์ดแบบดั้งเดิม
+    \item เหตุใดการจัดลำดับคอนทราสต์ของสีตามมาตรฐาน WCAG 2.1 จึงมีความจำเป็นอย่างยิ่งสำหรับแอปพลิเคชันสุขภาพ
+    \item จงยกตัวอย่าง 3 มาตรการวิศวกรรมซอฟต์แวร์ในการแก้ไขปัญหา RenderFlex Overflow ในแอปพลิเคชัน Flutter
+    \item อธิบายโครงสร้างและประโยชน์ของการ์ด Deep AI Analytics Card ในการสื่อสารข้อมูลการเรียนรู้เชิงลึกกับผู้ใช้งาน
+    \item จงอธิบายหลักการแปลงพิกัดภูมิศาสตร์ละติจูดและลองจิจูดลงบนผืนผ้าใบ \texttt{CustomPainter} ในการ์ดแผนที่ GPS
+    \item ทฤษฎีพฤติกรรมของ Fogg นำมาประยุกต์ใช้ในการออกแบบระบบ Micro-Animations บนแดชบอร์ดสุขภาพอย่างไร
+\end{enumerate}
+\clearpage
