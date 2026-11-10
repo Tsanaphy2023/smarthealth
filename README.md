@@ -1,7 +1,8 @@
 # smarthealth — Smart Health Step & Movement Tracker (แอปพลิเคชันสุขภาพ นับก้าวและวิเคราะห์การขยับร่างกาย)
 
 <p align="center">
-  <img src="latex_manual/figures/cover_front_smart_health.png" alt="Smart Health Tracker Manual Cover" width="420" />
+  <img src="assets/icons/app_icon.png" alt="Smart Health 3D Pixar App Icon" width="180" style="border-radius: 36px; margin-right: 16px;" />
+  <img src="latex_manual/figures/cover_front_smart_health.png" alt="Smart Health Tracker Manual Cover" width="380" />
 </p>
 
 **ผู้ออกแบบและพัฒนา:** ผู้ช่วยศาสตราจารย์ ดร.ชีวะ ทัศนา (สาขาวิชาฟิสิกส์ คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏรำไพพรรณี)  
