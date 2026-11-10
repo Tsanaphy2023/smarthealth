@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../models/activity_type.dart';
@@ -12,15 +13,18 @@ import 'gps_tracking_service.dart';
 import 'health_storage_service.dart';
 import 'voice_alert_service.dart';
 
-class MovementSensorService extends ChangeNotifier {
+class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
   static final MovementSensorService _instance = MovementSensorService._internal();
   factory MovementSensorService() => _instance;
   MovementSensorService._internal();
 
   StreamSubscription<UserAccelerometerEvent>? _accelSubscription;
+  StreamSubscription<AccelerometerEvent>? _rawAccelSubscription;
   StreamSubscription<StepCount>? _stepCountSubscription;
   StreamSubscription<PedestrianStatus>? _pedestrianStatusSubscription;
-  int? _initialHardwareStepCount;
+  int? _lastHardwareStepCount;
+  int _accelStepsSinceLastHardwareSync = 0;
+  double _gravityBaseline = 9.80665;
   bool _hasHardwarePedometer = false;
   bool _isFallWarningActive = false;
   Timer? _simulationTimer;
@@ -43,11 +47,11 @@ class MovementSensorService extends ChangeNotifier {
   ActivityType _currentActivity = ActivityType.stationary;
   int _activeSeconds = 0;
 
-  // Step detection algorithm variables
+  // Step detection algorithm variables (Calibrated for both hand-held and pants-pocket pendulum motion)
   double _lastMagnitude = 0.0;
   int _lastStepTimestampMs = 0;
-  static const double _stepThreshold = 1.85; // m/s^2 dynamic peak threshold
-  static const int _refractoryPeriodMs = 280; // minimum ms between valid steps
+  static const double _stepThreshold = 1.15; // m/s^2 pocket-friendly dynamic peak threshold
+  static const int _refractoryPeriodMs = 310; // minimum ms between valid steps
 
   // Health Science: Cadence & Sedentary tracking
   int _cadenceSpm = 0; // Steps per minute
@@ -182,6 +186,9 @@ class MovementSensorService extends ChangeNotifier {
     // รันการวินิจฉัย AI รอบแรก
     _runAiIntervalAnalysis();
 
+    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance.addObserver(this);
+
     _startSensorListener();
     _initPedometer();
     _startMotionDecayTimer();
@@ -190,7 +197,16 @@ class MovementSensorService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// เริ่มต้นรับฟัง Hardware Step Counter Sensor แบบประหยัดพลังงาน
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // เมื่อหยิบโทรศัพท์ออกจากกระเป๋ากางเกงหรือเปิดหน้าจอ ให้เชื่อมต่อสตรีมเซนเซอร์ซ้ำทันที
+      _startSensorListener();
+      _initPedometer();
+    }
+  }
+
+  /// เริ่มต้นรับฟัง Hardware Step Counter Sensor แบบประหยัดพลังงาน (ทำงานต่อเนื่องในกระเป๋ากางเกงและขณะปิดหน้าจอ)
   void _initPedometer() {
     try {
       _stepCountSubscription?.cancel();
@@ -217,15 +233,23 @@ class MovementSensorService extends ChangeNotifier {
 
   void _onHardwareStepCount(StepCount event) {
     _hasHardwarePedometer = true;
-    if (_initialHardwareStepCount == null) {
-      _initialHardwareStepCount = event.steps;
+    if (_lastHardwareStepCount == null) {
+      _lastHardwareStepCount = event.steps;
+      _accelStepsSinceLastHardwareSync = 0;
       return;
     }
-    final int delta = event.steps - _initialHardwareStepCount!;
-    if (delta > 0 && delta > _todaySteps) {
-      final int stepsToAdd = delta - _todaySteps;
-      for (int i = 0; i < stepsToAdd; i++) {
-        _onStepDetected(DateTime.now().millisecondsSinceEpoch, 2.2);
+    final int hwDiff = event.steps - _lastHardwareStepCount!;
+    _lastHardwareStepCount = event.steps;
+
+    if (hwDiff > 0) {
+      // ชดเชยก้าวที่ชิป Pedometer นับได้ในกระเป๋ากางเกง/ขณะปิดหน้าจอ โดยไม่นับซ้ำกับ Accelerometer
+      final int missedPocketSteps = hwDiff - _accelStepsSinceLastHardwareSync;
+      _accelStepsSinceLastHardwareSync = 0;
+      if (missedPocketSteps > 0) {
+        final int nowMs = DateTime.now().millisecondsSinceEpoch;
+        for (int i = 0; i < missedPocketSteps; i++) {
+          _onStepDetected(nowMs, 2.2, fromHardwarePedometer: true);
+        }
       }
     }
   }
@@ -240,14 +264,34 @@ class MovementSensorService extends ChangeNotifier {
   void _startSensorListener() {
     try {
       _accelSubscription?.cancel();
-      _accelSubscription = userAccelerometerEventStream().listen(
+      _accelSubscription = userAccelerometerEventStream(
+        samplingPeriod: SensorInterval.gameInterval,
+      ).listen(
         (UserAccelerometerEvent event) {
           _isSensorActive = true;
           _processAccelerometerData(event.x, event.y, event.z);
         },
         onError: (err) {
-          debugPrint('[i] Accelerometer sensor notice: $err');
-          _isSensorActive = false;
+          debugPrint('[i] UserAccelerometer sensor notice: $err');
+        },
+      );
+
+      // เพิ่มการรับฟัง Raw Accelerometer (Type 1) พร้อม High-Pass Gravity Filter สำหรับการแกว่งในกระเป๋ากางเกง
+      _rawAccelSubscription?.cancel();
+      _rawAccelSubscription = accelerometerEventStream(
+        samplingPeriod: SensorInterval.gameInterval,
+      ).listen(
+        (AccelerometerEvent event) {
+          _isSensorActive = true;
+          final double rawMag = math.sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+          _gravityBaseline = (_gravityBaseline * 0.92) + (rawMag * 0.08);
+          final double linearPocketAccel = (rawMag - _gravityBaseline).abs();
+          if (linearPocketAccel > _stepThreshold) {
+            _processAccelerometerData(linearPocketAccel, 0.0, 0.0);
+          }
+        },
+        onError: (err) {
+          debugPrint('[i] Raw Accelerometer sensor notice: $err');
         },
       );
     } catch (e) {
@@ -283,8 +327,11 @@ class MovementSensorService extends ChangeNotifier {
     _updateActivityClassification(magnitude);
   }
 
-  void _onStepDetected(int nowMs, double magnitude) {
+  void _onStepDetected(int nowMs, double magnitude, {bool fromHardwarePedometer = false}) {
     _todaySteps++;
+    if (!fromHardwarePedometer) {
+      _accelStepsSinceLastHardwareSync++;
+    }
     _lastStepTimestampMs = nowMs;
     _activeSeconds += 2;
     _sedentarySeconds = 0; // รีเซตเวลานั่งนิ่งเมื่อเกิดการก้าวเดินจริง
@@ -548,7 +595,8 @@ class MovementSensorService extends ChangeNotifier {
     _hourlySteps.clear();
     _stepsAtIntervalStart = 0;
     _currentIntervalStartTime = DateTime.now();
-    _initialHardwareStepCount = null;
+    _lastHardwareStepCount = null;
+    _accelStepsSinceLastHardwareSync = 0;
     _isFallWarningActive = false;
     HealthStorageService.saveStepsForDate(DateTime.now(), 0);
     GpsTrackingService.instance.clearRoute();
@@ -558,7 +606,9 @@ class MovementSensorService extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _accelSubscription?.cancel();
+    _rawAccelSubscription?.cancel();
     _stepCountSubscription?.cancel();
     _pedestrianStatusSubscription?.cancel();
     _simulationTimer?.cancel();
