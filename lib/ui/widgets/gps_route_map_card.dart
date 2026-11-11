@@ -171,147 +171,258 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
             ),
           ),
 
-          // 2. Interactive Map Viewport (CustomPainter)
+          // 2. Interactive Map Viewport (Satellite Imagery + CustomPainter Route Overlay)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Container(
-                height: 230,
+                height: 255,
                 color: const Color(0xFF0A0F18),
-                child: Stack(
-                  children: [
-                    // Gesture Detector for Pan & Zoom
-                    GestureDetector(
-                      onScaleUpdate: (details) {
-                        setState(() {
-                          _zoomLevel = (_zoomLevel * details.scale).clamp(0.5, 5.0);
-                          _panOffset += details.focalPointDelta;
-                          _isAutoCenter = false;
-                        });
-                      },
-                      child: AnimatedBuilder(
-                        animation: _pulseController,
-                        builder: (context, _) {
-                          return CustomPaint(
-                            size: Size.infinite,
-                            painter: GpsRoutePainter(
-                              waypoints: waypoints,
-                              currentPosition: currentPoint,
-                              pulseValue: _pulseController.value,
-                              zoomLevel: _zoomLevel,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final int tileZoom = (17 + (log(_zoomLevel) / ln2).round()).clamp(14, 18);
+                    final double centerLat = currentPoint?.latitude ?? GpsTrackingService.defaultLat;
+                    final double centerLng = currentPoint?.longitude ?? GpsTrackingService.defaultLng;
+
+                    return Stack(
+                      children: [
+                        // 2.1 Satellite / Street Slippy Map Tile Layer
+                        if (gps.mapLayerMode != GpsMapLayerMode.cyberGrid)
+                          Positioned.fill(
+                            child: SatelliteSlippyMapLayer(
+                              centerLat: centerLat,
+                              centerLng: centerLng,
+                              tileZoom: tileZoom,
                               panOffset: _panOffset,
-                              isAutoCenter: _isAutoCenter,
+                              layerMode: gps.mapLayerMode,
                             ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    // Map Overlays: Compass & Legend
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.65),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Transform.rotate(
-                              angle: ((currentPoint?.heading ?? 0) * pi / 180.0),
-                              child: const Icon(
-                                Icons.navigation_rounded,
-                                color: HealthTheme.neonCyan,
-                                size: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${currentPoint?.heading.toStringAsFixed(0) ?? '0'}° N',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
 
-                    // Floating Map Controls (+, -, Recenter, Fullscreen)
-                    Positioned(
-                      right: 10,
-                      top: 10,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildMapIconButton(
-                            icon: Icons.add,
-                            tooltip: 'ซูมเข้า',
-                            onTap: () {
-                              setState(() {
-                                _zoomLevel = (_zoomLevel * 1.25).clamp(0.5, 5.0);
-                              });
+                        // 2.2 Gesture Detector for Pan & Zoom + Route Polyline Overlay
+                        GestureDetector(
+                          onScaleUpdate: (details) {
+                            setState(() {
+                              _zoomLevel = (_zoomLevel * details.scale).clamp(0.5, 5.0);
+                              _panOffset += details.focalPointDelta;
+                              _isAutoCenter = false;
+                            });
+                          },
+                          child: AnimatedBuilder(
+                            animation: _pulseController,
+                            builder: (context, _) {
+                              return CustomPaint(
+                                size: Size.infinite,
+                                painter: GpsRoutePainter(
+                                  waypoints: waypoints,
+                                  currentPosition: currentPoint,
+                                  pulseValue: _pulseController.value,
+                                  zoomLevel: _zoomLevel,
+                                  panOffset: _panOffset,
+                                  isAutoCenter: _isAutoCenter,
+                                  mapLayerMode: gps.mapLayerMode,
+                                  tileZoom: tileZoom,
+                                ),
+                              );
                             },
                           ),
-                          const SizedBox(height: 6),
-                          _buildMapIconButton(
-                            icon: Icons.remove,
-                            tooltip: 'ซูมออก',
-                            onTap: () {
-                              setState(() {
-                                _zoomLevel = (_zoomLevel / 1.25).clamp(0.5, 5.0);
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 6),
-                          _buildMapIconButton(
-                            icon: Icons.my_location_rounded,
-                            tooltip: 'กึ่งกลางพิกัดปัจจุบัน',
-                            isActive: _isAutoCenter,
-                            onTap: _recenterMap,
-                          ),
-                          const SizedBox(height: 6),
-                          _buildMapIconButton(
-                            icon: Icons.fullscreen_rounded,
-                            tooltip: 'ขยายเต็มจอ',
-                            onTap: () => _openFullscreenMap(context, gps),
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
 
-                    // Bottom-Left Distance Scale Indicator
-                    Positioned(
-                      bottom: 8,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.65),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '${waypoints.length} จุดพิกัด • Haversine WGS84',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 9,
-                            fontFamily: 'monospace',
+                        // 2.3 Top-Left Overlays: Compass + Satellite/Street/Radar Layer Switcher
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.72),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.15),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Transform.rotate(
+                                      angle: ((currentPoint?.heading ?? 0) * pi / 180.0),
+                                      child: const Icon(
+                                        Icons.navigation_rounded,
+                                        color: HealthTheme.neonCyan,
+                                        size: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${currentPoint?.heading.toStringAsFixed(0) ?? '0'}° N',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // Map Layer Switcher Pill
+                              InkWell(
+                                onTap: () => gps.cycleMapLayerMode(),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 9, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: gps.mapLayerMode == GpsMapLayerMode.satellite
+                                        ? HealthTheme.neonCyan.withOpacity(0.88)
+                                        : Colors.black.withOpacity(0.75),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: HealthTheme.neonCyan,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        gps.mapLayerMode == GpsMapLayerMode.satellite
+                                            ? Icons.satellite_alt_rounded
+                                            : gps.mapLayerMode == GpsMapLayerMode.street
+                                                ? Icons.map_rounded
+                                                : Icons.radar_rounded,
+                                        size: 13,
+                                        color: gps.mapLayerMode == GpsMapLayerMode.satellite
+                                            ? Colors.black
+                                            : HealthTheme.neonCyan,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        gps.mapLayerMode.label,
+                                        style: TextStyle(
+                                          color: gps.mapLayerMode == GpsMapLayerMode.satellite
+                                              ? Colors.black
+                                              : Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                  ],
+
+                        // 2.4 Floating Map Controls (+, -, Recenter, Fullscreen)
+                        Positioned(
+                          right: 10,
+                          top: 10,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildMapIconButton(
+                                icon: Icons.add,
+                                tooltip: 'ซูมเข้า',
+                                onTap: () {
+                                  setState(() {
+                                    _zoomLevel = (_zoomLevel * 1.35).clamp(0.5, 5.0);
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 6),
+                              _buildMapIconButton(
+                                icon: Icons.remove,
+                                tooltip: 'ซูมออก',
+                                onTap: () {
+                                  setState(() {
+                                    _zoomLevel = (_zoomLevel / 1.35).clamp(0.5, 5.0);
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 6),
+                              _buildMapIconButton(
+                                icon: Icons.my_location_rounded,
+                                tooltip: 'กึ่งกลางพิกัดปัจจุบัน',
+                                isActive: _isAutoCenter,
+                                onTap: _recenterMap,
+                              ),
+                              const SizedBox(height: 6),
+                              _buildMapIconButton(
+                                icon: Icons.fullscreen_rounded,
+                                tooltip: 'ขยายเต็มจอ',
+                                onTap: () => _openFullscreenMap(context, gps),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // 2.5 Bottom-Left & Bottom-Right Status Badges
+                        Positioned(
+                          bottom: 8,
+                          left: 10,
+                          right: 10,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.72),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '${waypoints.length} จุด • ESRI Satellite WGS84',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.85),
+                                    fontSize: 9,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () => gps.toggleSimulationFallback(),
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
+                                        ? HealthTheme.neonEmerald.withOpacity(0.85)
+                                        : Colors.black.withOpacity(0.75),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
+                                          ? HealthTheme.neonEmerald
+                                          : HealthTheme.neonOrange.withOpacity(0.7),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
+                                        ? '🛰️ สัญญาณ GPS ดาวเทียมจริง'
+                                        : '🎮 โหมดจำลองพิกัด (แตะสลับ GPS จริง)',
+                                    style: TextStyle(
+                                      color: (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
+                                          ? Colors.black
+                                          : HealthTheme.neonOrange,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -724,16 +835,32 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
               ),
             ),
             Expanded(
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: GpsRoutePainter(
-                  waypoints: gps.waypoints,
-                  currentPosition: gps.currentWaypoint,
-                  pulseValue: _pulseController.value,
-                  zoomLevel: 1.2,
-                  panOffset: Offset.zero,
-                  isAutoCenter: true,
-                ),
+              child: Stack(
+                children: [
+                  if (gps.mapLayerMode != GpsMapLayerMode.cyberGrid)
+                    Positioned.fill(
+                      child: SatelliteSlippyMapLayer(
+                        centerLat: gps.currentWaypoint?.latitude ?? GpsTrackingService.defaultLat,
+                        centerLng: gps.currentWaypoint?.longitude ?? GpsTrackingService.defaultLng,
+                        tileZoom: 17,
+                        panOffset: Offset.zero,
+                        layerMode: gps.mapLayerMode,
+                      ),
+                    ),
+                  CustomPaint(
+                    size: Size.infinite,
+                    painter: GpsRoutePainter(
+                      waypoints: gps.waypoints,
+                      currentPosition: gps.currentWaypoint,
+                      pulseValue: _pulseController.value,
+                      zoomLevel: 1.2,
+                      panOffset: Offset.zero,
+                      isAutoCenter: true,
+                      mapLayerMode: gps.mapLayerMode,
+                      tileZoom: 17,
+                    ),
+                  ),
+                ],
               ),
             ),
             Container(
@@ -767,7 +894,99 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
   }
 }
 
-/// CustomPainter สำหรับการเรนเดอร์พิกัด GPS ลงบนผืนผ้าใบแบบเวกเตอร์คอนทราสต์สูง
+/// วิดเจ็ตเรนเดอร์แผนที่ภาพถ่ายดาวเทียมจริง (ESRI World Imagery Satellite) และแผนที่ถนน (OSM)
+class SatelliteSlippyMapLayer extends StatelessWidget {
+  final double centerLat;
+  final double centerLng;
+  final int tileZoom;
+  final Offset panOffset;
+  final GpsMapLayerMode layerMode;
+
+  const SatelliteSlippyMapLayer({
+    super.key,
+    required this.centerLat,
+    required this.centerLng,
+    required this.tileZoom,
+    required this.panOffset,
+    required this.layerMode,
+  });
+
+  static Offset latLngToWorldPixel(double lat, double lng, int zoom) {
+    final double n = (1 << zoom) * 256.0;
+    final double x = ((lng + 180.0) / 360.0) * n;
+    final double latRad = lat.clamp(-85.0511, 85.0511) * pi / 180.0;
+    final double y =
+        ((1.0 - log(tan(latRad) + (1.0 / cos(latRad))) / pi) / 2.0) * n;
+    return Offset(x, y);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double w = constraints.maxWidth;
+        final double h = constraints.maxHeight;
+        final Offset centerWorld =
+            latLngToWorldPixel(centerLat, centerLng, tileZoom);
+
+        final int centerTileX = (centerWorld.dx / 256.0).floor();
+        final int centerTileY = (centerWorld.dy / 256.0).floor();
+        final int maxTileIndex = (1 << tileZoom) - 1;
+
+        final List<Widget> tiles = [];
+        for (int dx = -2; dx <= 2; dx++) {
+          for (int dy = -2; dy <= 2; dy++) {
+            final int tx = (centerTileX + dx).clamp(0, maxTileIndex);
+            final int ty = (centerTileY + dy).clamp(0, maxTileIndex);
+
+            final double tileWorldX = tx * 256.0;
+            final double tileWorldY = ty * 256.0;
+
+            final double screenX =
+                (w / 2.0) + (tileWorldX - centerWorld.dx) + panOffset.dx;
+            final double screenY =
+                (h / 2.0) + (tileWorldY - centerWorld.dy) + panOffset.dy;
+
+            final String tileUrl = layerMode == GpsMapLayerMode.satellite
+                ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/$tileZoom/$ty/$tx'
+                : 'https://tile.openstreetmap.org/$tileZoom/$tx/$ty.png';
+
+            tiles.add(
+              Positioned(
+                left: screenX,
+                top: screenY,
+                width: 256.5,
+                height: 256.5,
+                child: Image.network(
+                  tileUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFF0E1726),
+                  ),
+                ),
+              ),
+            );
+          }
+        }
+
+        return Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            ...tiles,
+            // Subtle dark vignette for high-contrast neon HUD & route visibility
+            Container(
+              color: Colors.black.withOpacity(
+                layerMode == GpsMapLayerMode.satellite ? 0.18 : 0.25,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// CustomPainter สำหรับการเรนเดอร์พิกัด GPS ลงบนผืนผ้าใบแบบเวกเตอร์คอนทราสต์สูงและภาพถ่ายดาวเทียม
 class GpsRoutePainter extends CustomPainter {
   final List<GpsWaypoint> waypoints;
   final GpsWaypoint? currentPosition;
@@ -775,6 +994,8 @@ class GpsRoutePainter extends CustomPainter {
   final double zoomLevel;
   final Offset panOffset;
   final bool isAutoCenter;
+  final GpsMapLayerMode mapLayerMode;
+  final int tileZoom;
 
   GpsRoutePainter({
     required this.waypoints,
@@ -783,19 +1004,30 @@ class GpsRoutePainter extends CustomPainter {
     required this.zoomLevel,
     required this.panOffset,
     required this.isAutoCenter,
+    this.mapLayerMode = GpsMapLayerMode.satellite,
+    this.tileZoom = 17,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. วาดตารางพิกัดไซเบอร์เนติก (Cyber Grid Lines)
-    _drawGridBackground(canvas, size);
+    // 1. วาดตารางพิกัดไซเบอร์เนติกเฉพาะในโหมด Cyber Radar
+    if (mapLayerMode == GpsMapLayerMode.cyberGrid) {
+      _drawGridBackground(canvas, size);
+    }
 
     if (waypoints.isEmpty && currentPosition == null) {
       _drawNoGpsMessage(canvas, size);
       return;
     }
 
-    // 2. คำนวณขอบเขตพิกัดภูมิศาสตร์ (Bounding Box)
+    final double refLat =
+        currentPosition?.latitude ?? GpsTrackingService.defaultLat;
+    final double refLng =
+        currentPosition?.longitude ?? GpsTrackingService.defaultLng;
+    final Offset centerWorld =
+        SatelliteSlippyMapLayer.latLngToWorldPixel(refLat, refLng, tileZoom);
+
+    // 2. คำนวณขอบเขตพิกัดภูมิศาสตร์ (Bounding Box สำหรับโหมด Cyber Radar)
     double minLat = double.infinity;
     double maxLat = -double.infinity;
     double minLng = double.infinity;
@@ -813,7 +1045,6 @@ class GpsRoutePainter extends CustomPainter {
       if (pt.longitude > maxLng) maxLng = pt.longitude;
     }
 
-    // ป้องกันการหารด้วยศูนย์เมื่อมีจุดเดียว
     const double paddingDelta = 0.0004;
     if ((maxLat - minLat).abs() < 0.00005) {
       minLat -= paddingDelta;
@@ -824,19 +1055,26 @@ class GpsRoutePainter extends CustomPainter {
       maxLng += paddingDelta;
     }
 
-    // เพิ่มระยะขอบหน้าจอ
     final double margin = 36.0;
     final double drawW = size.width - (margin * 2);
     final double drawH = size.height - (margin * 2);
 
     Offset toCanvas(double lat, double lng) {
+      if (mapLayerMode != GpsMapLayerMode.cyberGrid) {
+        final Offset ptWorld =
+            SatelliteSlippyMapLayer.latLngToWorldPixel(lat, lng, tileZoom);
+        return Offset(
+          (size.width / 2.0) + (ptWorld.dx - centerWorld.dx) + panOffset.dx,
+          (size.height / 2.0) + (ptWorld.dy - centerWorld.dy) + panOffset.dy,
+        );
+      }
+
       final double normalizedX = (lng - minLng) / (maxLng - minLng);
-      final double normalizedY = (maxLat - lat) / (maxLat - minLat); // พลิกแกน Y สำหรับพิกัดหน้าจอ
+      final double normalizedY = (maxLat - lat) / (maxLat - minLat);
 
       double px = margin + (normalizedX * drawW);
       double py = margin + (normalizedY * drawH);
 
-      // นำ Zoom และ Pan มาแปลงจุด
       final center = Offset(size.width / 2, size.height / 2);
       px = center.dx + (px - center.dx) * zoomLevel + panOffset.dx;
       py = center.dy + (py - center.dy) * zoomLevel + panOffset.dy;

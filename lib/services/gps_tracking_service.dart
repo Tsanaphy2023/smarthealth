@@ -2,7 +2,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import '../models/gps_waypoint.dart';
+
+/// โหมดชั้นแผนที่ (Map Layer Mode)
+enum GpsMapLayerMode {
+  satellite('ภาพดาวเทียม (Satellite)'),
+  street('แผนที่ถนน (Street)'),
+  cyberGrid('เรดาร์เวกเตอร์ (Cyber Radar)');
+
+  final String label;
+  const GpsMapLayerMode(this.label);
+}
 
 /// โหมดกิจกรรมการติดตามพิกัด GPS
 enum GpsActivityMode {
@@ -22,15 +33,84 @@ class GpsTrackingService extends ChangeNotifier {
   factory GpsTrackingService() => _instance;
   static GpsTrackingService get instance => _instance;
 
+  static const EventChannel _gpsEventChannel =
+      EventChannel('com.rbru.health.smart_health_tracker/gps_stream');
+  StreamSubscription<dynamic>? _hardwareGpsSubscription;
+
   GpsTrackingService._internal() {
     _initDefaultLocation();
+    _initHardwareGpsStream();
   }
 
-  // สถานะการติดตาม
+  // สถานะการติดตามและชั้นแผนที่ (ค่าเริ่มต้น: ภาพถ่ายดาวเทียม)
   bool _isTracking = false;
   bool _isPaused = false;
+  bool _hasHardwareGpsSignal = false;
+  bool _useSimulationFallback = false;
+  GpsMapLayerMode _mapLayerMode = GpsMapLayerMode.satellite;
+
   bool get isTracking => _isTracking;
   bool get isPaused => _isPaused;
+  bool get hasHardwareGpsSignal => _hasHardwareGpsSignal;
+  bool get useSimulationFallback => _useSimulationFallback;
+  GpsMapLayerMode get mapLayerMode => _mapLayerMode;
+
+  void setMapLayerMode(GpsMapLayerMode mode) {
+    _mapLayerMode = mode;
+    notifyListeners();
+  }
+
+  void cycleMapLayerMode() {
+    final nextIdx = (_mapLayerMode.index + 1) % GpsMapLayerMode.values.length;
+    _mapLayerMode = GpsMapLayerMode.values[nextIdx];
+    notifyListeners();
+  }
+
+  void toggleSimulationFallback() {
+    _useSimulationFallback = !_useSimulationFallback;
+    notifyListeners();
+  }
+
+  void _initHardwareGpsStream() {
+    if (kIsWeb) return;
+    try {
+      _hardwareGpsSubscription?.cancel();
+      _hardwareGpsSubscription = _gpsEventChannel.receiveBroadcastStream().listen(
+        (dynamic event) {
+          if (event is Map) {
+            final double? lat = (event['latitude'] as num?)?.toDouble();
+            final double? lng = (event['longitude'] as num?)?.toDouble();
+            if (lat == null || lng == null) return;
+
+            final newWp = GpsWaypoint(
+              latitude: lat,
+              longitude: lng,
+              altitude: (event['altitude'] as num?)?.toDouble() ?? defaultAlt,
+              accuracy: (event['accuracy'] as num?)?.toDouble() ?? 4.0,
+              speedKmh: (event['speedKmh'] as num?)?.toDouble() ?? 0.0,
+              heading: (event['heading'] as num?)?.toDouble() ?? 0.0,
+              timestamp: DateTime.now(),
+            );
+
+            _hasHardwareGpsSignal = true;
+            if (!_useSimulationFallback) {
+              _currentWaypoint = newWp;
+              if (_isTracking && !_isPaused) {
+                addWaypoint(newWp);
+              } else {
+                notifyListeners();
+              }
+            }
+          }
+        },
+        onError: (dynamic err) {
+          debugPrint('[i] Hardware GPS stream notice: $err');
+        },
+      );
+    } catch (e) {
+      debugPrint('[i] Hardware GPS channel init notice: $e');
+    }
+  }
 
   GpsActivityMode _activityMode = GpsActivityMode.walking;
   GpsActivityMode get activityMode => _activityMode;
@@ -125,7 +205,10 @@ class GpsTrackingService extends ChangeNotifier {
     _simulatedMovementTimer?.cancel();
     _simulatedMovementTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       if (_isTracking && !_isPaused) {
-        _simulateRealisticGpsStep();
+        // ใช้โหมดจำลองเฉพาะเมื่อเปิดโหมดจำลอง หรือยังไม่มีสัญญาณดาวเทียมฮาร์ดแวร์จริง
+        if (_useSimulationFallback || !_hasHardwareGpsSignal) {
+          _simulateRealisticGpsStep();
+        }
       }
     });
 
@@ -296,6 +379,7 @@ class GpsTrackingService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _hardwareGpsSubscription?.cancel();
     _trackingTimer?.cancel();
     _simulatedMovementTimer?.cancel();
     super.dispose();
