@@ -16,6 +16,7 @@ import '../widgets/hourly_activity_chart.dart';
 import '../widgets/kinetic_avatar_widget.dart';
 import '../widgets/live_motion_gauge.dart';
 import '../widgets/metric_stat_cards.dart';
+import '../widgets/okr_faculty_dashboard_card.dart';
 import '../widgets/profile_settings_dialog.dart';
 import '../widgets/responsive_layout_builder.dart';
 import '../widgets/sedentary_alert_banner.dart';
@@ -449,6 +450,8 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
       padding: const EdgeInsets.only(top: 8, bottom: 28),
       child: Column(
         children: [
+          OkrFacultyDashboardCard(sensor: sensor),
+          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: WeeklyHistoryCard(sensor: sensor),
@@ -549,6 +552,8 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          OkrFacultyDashboardCard(sensor: sensor),
+          const SizedBox(height: 16),
           AutoScheduleControlCard(sensor: sensor),
           const SizedBox(height: 16),
           _buildProfileSummaryCard(sensor),
@@ -610,6 +615,8 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
           ActivityRingProgress(metric: metric, onGoalTap: _openComprehensiveGoalsDialog),
           const SizedBox(height: 14),
           AutoScheduleControlCard(sensor: sensor),
+          const SizedBox(height: 14),
+          OkrFacultyDashboardCard(sensor: sensor),
           const SizedBox(height: 16),
           KineticAvatarWidget(
             activity: metric.currentActivity,
@@ -712,6 +719,8 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
                   children: [
                     MetricStatCards(metric: metric),
                     const SizedBox(height: 16),
+                    OkrFacultyDashboardCard(sensor: sensor),
+                    const SizedBox(height: 16),
                     WeeklyHistoryCard(sensor: sensor),
                     const SizedBox(height: 16),
                     CadenceAndHydrationCard(
@@ -802,6 +811,8 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
                 child: Column(
                   children: [
                     MetricStatCards(metric: metric),
+                    const SizedBox(height: 16),
+                    OkrFacultyDashboardCard(sensor: sensor),
                     const SizedBox(height: 16),
                     WeeklyHistoryCard(sensor: sensor),
                     const SizedBox(height: 16),

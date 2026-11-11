@@ -9,10 +9,12 @@ import '../models/activity_type.dart';
 import '../models/app_brand_edition.dart';
 import '../models/daily_health_metric.dart';
 import '../models/health_interval_record.dart';
+import '../models/okr_faculty_model.dart';
 import '../models/user_health_profile.dart';
 import 'deep_health_ai_engine.dart';
 import 'gps_tracking_service.dart';
 import 'health_storage_service.dart';
+import 'okr_sync_service.dart';
 import 'voice_alert_service.dart';
 
 class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
@@ -166,6 +168,44 @@ class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
 
   List<HealthIntervalRecord> get intervalRecords => List.unmodifiable(_intervalRecords);
   DeepHealthInference? get latestAiInference => _latestAiInference;
+
+  /// ข้อมูลสรุปโครงการ OKR Key Result 3.2 (ก้าวสะสมรวมคณะวิทยาศาสตร์ฯ > 10,000,000 ก้าว ปีงบประมาณ 2570 • บุคลากร 64+ คน)
+  FacultyOkrSummary get okrSummary => OkrSyncService().buildCurrentOkrSummary(
+        currentUserTodaySteps: _todaySteps,
+        appEdition: _brandEdition.appName,
+      );
+
+  /// ซิงค์ข้อมูลก้าวเดินของบุคลากรเข้าสู่ฐานข้อมูลกลาง OKR 3.2 ทันที
+  FacultyOkrSummary syncStepsToFacultyOkr() {
+    final res = OkrSyncService().syncStaffSteps(
+      todaySteps: _todaySteps,
+      appEdition: _brandEdition.appName,
+    );
+    notifyListeners();
+    return res;
+  }
+
+  /// อัปเดตข้อมูลทะเบียนบุคลากรสำหรับระบบฐานข้อมูล OKR 3.2
+  Future<void> updateStaffOkrRegistration({
+    required String staffId,
+    required String fullName,
+    required String department,
+    required String positionTitle,
+    String? serverApiUrl,
+    bool? autoSyncEnabled,
+  }) async {
+    await OkrSyncService().updateStaffRegistration(
+      staffId: staffId,
+      fullName: fullName,
+      department: department,
+      positionTitle: positionTitle,
+      serverApiUrl: serverApiUrl,
+      autoSyncEnabled: autoSyncEnabled,
+      currentTodaySteps: _todaySteps,
+      appEdition: _brandEdition.appName,
+    );
+    notifyListeners();
+  }
 
   /// Dynamic Stride Distance (Km) based on User Profile Height and Activity Speed
   double get distanceKm {
@@ -359,6 +399,7 @@ ${_brandEdition.developerCredit}
 
     final profileData = await HealthStorageService.getUserProfileData();
     _profile = UserHealthProfile.fromJson(profileData);
+    await OkrSyncService().initialize();
 
     final now = DateTime.now();
     _currentDateKey = HealthStorageService.dateKeyFor(now);

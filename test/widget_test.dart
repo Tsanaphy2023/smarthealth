@@ -110,6 +110,24 @@ void main() {
       );
       expect(service.isAuto24HourMode, isTrue);
     });
+
+    test('OKR Key Result 3.2 Faculty Database (64+ staff, 9 departments, 10M steps target) syncs accurately', () async {
+      final service = MovementSensorService();
+      final initialOkr = service.okrSummary;
+      expect(initialOkr.totalStaffCount, greaterThanOrEqualTo(60));
+      expect(initialOkr.departments.length, equals(9));
+      expect(initialOkr.totalFacultySteps, greaterThan(3000000));
+
+      await service.updateStaffOkrRegistration(
+        staffId: 'SCI-001',
+        fullName: 'ผศ.ดร.ชีวะ ทัศนา',
+        department: 'สาขาวิชาฟิสิกส์',
+        positionTitle: 'ผู้ช่วยศาสตราจารย์',
+      );
+      final updatedOkr = service.syncStepsToFacultyOkr();
+      expect(updatedOkr.totalStaffCount, greaterThanOrEqualTo(64));
+      expect(updatedOkr.progressPercent, greaterThan(30.0));
+    });
   });
 
   testWidgets('SmartHealthTrackerApp renders without overflow across 320dp, 360dp, 768dp, and 1280dp viewports',
