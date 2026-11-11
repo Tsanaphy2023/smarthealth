@@ -127,12 +127,12 @@ class _KineticAvatarWidgetState extends State<KineticAvatarWidget>
                   children: [
                     Expanded(
                       child: Text(
-                        'สภาวะร่างกาย (KINETIC)',
+                        'ระดับความกระฉับกระเฉงสด (LIVE PULSE)',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.60),
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
+                          letterSpacing: 0.6,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),

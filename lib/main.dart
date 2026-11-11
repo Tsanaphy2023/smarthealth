@@ -38,7 +38,7 @@ class SmartHealthTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Health Step Pulse',
+      title: 'ChewaPulse xAI • SciRBRU Move+AI',
       debugShowCheckedModeBanner: false,
       theme: HealthTheme.darkTheme,
       home: const HomeTrackerScreen(),

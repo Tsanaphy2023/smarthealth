@@ -10,6 +10,7 @@ class HealthStorageService {
   static const String _keySedentaryAlertMinutes = 'health_sedentary_alert_minutes';
   static const String _keyDailyWaterGoal = 'health_daily_water_goal';
   static const String _keyVoiceAlertEnabled = 'health_voice_alert_enabled';
+  static const String _keyBrandEditionIndex = 'health_brand_edition_index';
 
   // Profile keys
   static const String _keyProfileWeight = 'health_profile_weight';
@@ -124,5 +125,15 @@ class HealthStorageService {
   static Future<void> setVoiceAlertEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyVoiceAlertEnabled, enabled);
+  }
+
+  static Future<int> getBrandEditionIndex() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_keyBrandEditionIndex) ?? 0;
+  }
+
+  static Future<void> setBrandEditionIndex(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyBrandEditionIndex, index);
   }
 }

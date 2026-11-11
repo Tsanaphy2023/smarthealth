@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
-        android:label="Smart Health Tracker"
+        android:label="ChewaPulse xAI"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

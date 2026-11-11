@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_health_tracker/main.dart';
 import 'package:smart_health_tracker/models/activity_type.dart';
+import 'package:smart_health_tracker/models/app_brand_edition.dart';
 import 'package:smart_health_tracker/models/daily_health_metric.dart';
 import 'package:smart_health_tracker/models/user_health_profile.dart';
 import 'package:smart_health_tracker/services/movement_sensor_service.dart';
@@ -107,11 +108,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byType(SmartHealthTrackerApp), findsOneWidget);
-      expect(find.textContaining('SMART HEALTH TRACKER'), findsOneWidget);
+      expect(find.textContaining('CHEWAPULSE XAI'), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'No layout overflow at viewport $size');
     }
 
-    // Test opening ComprehensiveGoalsDialog on narrow 320x640 viewport
+    // Test Dual-Brand switching (ChewaPulse xAI <-> SciRBRU Move+AI) and 4-Tab Bottom Navigation on narrow 320x640 viewport
     await tester.binding.setSurfaceSize(const Size(320, 640));
     await tester.pumpWidget(
       MultiProvider(
@@ -123,6 +124,35 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 200));
+
+    // Switch brand to SciRBRU Move+AI
+    await tester.tap(find.text('SciRBRU Move+AI'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('SCIRBRU MOVE+AI'), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'No overflow after switching to SciRBRU Move+AI');
+
+    // Test Bottom Navigation Tabs 1, 2, 3
+    await tester.tap(find.text('แผนที่ดาวเทียม'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(tester.takeException(), isNull, reason: 'No overflow on Tab 1 (Satellite Map)');
+
+    await tester.tap(find.text('สถิติ 7 วัน & AI'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('แนวโน้มสุขภาพย้อนหลัง 7 วัน'), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'No overflow on Tab 2 (7-Day History & AI)');
+
+    await tester.tap(find.text('โปรไฟล์'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(tester.takeException(), isNull, reason: 'No overflow on Tab 3 (Profile & Brand)');
+
+    // Return to Tab 0 and test ComprehensiveGoalsDialog on narrow 320x640 viewport
+    await tester.tap(find.text('วันนี้'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
 
     await tester.tap(find.byIcon(Icons.tune));
     await tester.pump();

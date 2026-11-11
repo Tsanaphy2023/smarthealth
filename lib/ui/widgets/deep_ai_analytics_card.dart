@@ -92,18 +92,20 @@ class _DeepAiAnalyticsCardState extends State<DeepAiAnalyticsCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'วิเคราะห์สุขภาพด้วย AI เชิงลึก',
-                            style: TextStyle(
+                          Text(
+                            widget.sensor.brandEdition.aiCardTitle,
+                            style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.bold,
                             ),
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            'On-Device Deep Learning (รอบ 4 ชม.)',
-                            style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                            widget.sensor.brandEdition.aiCardSubtitle,
+                            style: TextStyle(color: Colors.grey[400], fontSize: 10.5),
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
