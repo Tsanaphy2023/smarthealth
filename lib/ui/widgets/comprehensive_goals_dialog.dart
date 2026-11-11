@@ -72,115 +72,132 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: HealthTheme.surfaceCard,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Container(
-        width: 440,
-        constraints: const BoxConstraints(maxHeight: 620),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Title Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.tune, color: HealthTheme.cyanPrimary, size: 24),
-                    SizedBox(width: 8),
-                    Text(
-                      'ตั้งค่าเป้าหมายสุขภาพ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440, maxHeight: 620),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Title Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Row(
+                      children: [
+                        Icon(Icons.tune, color: HealthTheme.cyanPrimary, size: 22),
+                        SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'ตั้งค่าเป้าหมายสุขภาพ',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // Tab bar
+              Container(
+                decoration: BoxDecoration(
+                  color: HealthTheme.surfaceElevated,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: HealthTheme.cyanPrimary,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  labelColor: HealthTheme.cyanPrimary,
+                  unselectedLabelColor: Colors.white60,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  labelStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                  tabs: const [
+                    Tab(text: 'เป้าหมายรายวัน'),
+                    Tab(text: 'ลดน้ำหนัก'),
+                    Tab(text: 'ระบบเตือนขยับ'),
                   ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54),
-                  onPressed: () => Navigator.pop(context),
+              ),
+
+              const SizedBox(height: 14),
+
+              // Tab View
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildDailyGoalsTab(),
+                    _buildWeightLossTab(),
+                    _buildHealthAndAlertsTab(),
+                  ],
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            // Tab bar
-            Container(
-              decoration: BoxDecoration(
-                color: HealthTheme.surfaceElevated,
-                borderRadius: BorderRadius.circular(12),
               ),
-              child: TabBar(
-                controller: _tabController,
-                indicatorColor: HealthTheme.cyanPrimary,
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: HealthTheme.cyanPrimary,
-                unselectedLabelColor: Colors.white60,
-                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                tabs: const [
-                  Tab(text: 'เป้าหมายรายวัน'),
-                  Tab(text: 'ลดน้ำหนัก'),
-                  Tab(text: 'ระบบเตือนขยับ'),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 14),
+              const SizedBox(height: 14),
 
-            // Tab View
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
+              // Bottom Buttons
+              Row(
                 children: [
-                  _buildDailyGoalsTab(),
-                  _buildWeightLossTab(),
-                  _buildHealthAndAlertsTab(),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      foregroundColor: HealthTheme.orangeCalorie,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: const Icon(Icons.restart_alt, size: 16),
+                    label: const Text('รีเซต 0', style: TextStyle(fontSize: 11.5)),
+                    onPressed: () {
+                      widget.sensor.resetAllToZero();
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('รีเซตสถิติทุกอย่างเป็น 0 เรียบร้อยแล้ว')),
+                      );
+                    },
+                  ),
+                  const Spacer(),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      side: const BorderSide(color: Colors.white24),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('ยกเลิก', style: TextStyle(fontSize: 12)),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: HealthTheme.cyanPrimary,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _saveSettings,
+                    child: const Text('บันทึก', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // Bottom Buttons
-            Row(
-              children: [
-                TextButton.icon(
-                  style: TextButton.styleFrom(foregroundColor: HealthTheme.orangeCalorie),
-                  icon: const Icon(Icons.restart_alt, size: 18),
-                  label: const Text('รีเซตเป็น 0', style: TextStyle(fontSize: 12)),
-                  onPressed: () {
-                    widget.sensor.resetAllToZero();
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('รีเซตสถิติทุกอย่างเป็น 0 เรียบร้อยแล้ว')),
-                    );
-                  },
-                ),
-                const Spacer(),
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white70,
-                    side: const BorderSide(color: Colors.white24),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('ยกเลิก'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: HealthTheme.cyanPrimary,
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: _saveSettings,
-                  child: const Text('บันทึก', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -197,10 +214,19 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${_stepGoal.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} ก้าว',
-                  style: const TextStyle(color: HealthTheme.cyanPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
-              Text('ระยะทาง ~${((_stepGoal * 0.72) / 1000).toStringAsFixed(1)} กม.',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              Flexible(
+                child: Text('${_stepGoal.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} ก้าว',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: HealthTheme.cyanPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text('ระยะทาง ~${((_stepGoal * 0.72) / 1000).toStringAsFixed(1)} กม.',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              ),
             ],
           ),
           Slider(
@@ -214,6 +240,7 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
           ),
           Wrap(
             spacing: 6,
+            runSpacing: 6,
             children: [6000, 8000, 10000, 12000, 15000].map((preset) {
               final isSel = _stepGoal == preset;
               return ChoiceChip(
@@ -234,10 +261,19 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$_waterGoal mL',
-                  style: const TextStyle(color: HealthTheme.blueDistance, fontSize: 20, fontWeight: FontWeight.bold)),
-              Text('~${(_waterGoal / 250).toStringAsFixed(0)} แก้วมาตรฐาน',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              Flexible(
+                child: Text('$_waterGoal mL',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: HealthTheme.blueDistance, fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text('~${(_waterGoal / 250).toStringAsFixed(0)} แก้วมาตรฐาน',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              ),
             ],
           ),
           Slider(
@@ -267,22 +303,26 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('น้ำหนักปัจจุบัน', style: TextStyle(color: Colors.grey[400], fontSize: 11)),
-                  Text('${currentWeight.toStringAsFixed(1)} kg',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('น้ำหนักปัจจุบัน', style: TextStyle(color: Colors.grey[400], fontSize: 11)),
+                    Text('${currentWeight.toStringAsFixed(1)} kg',
+                        style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
               const Icon(Icons.arrow_forward, color: HealthTheme.orangeCalorie),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('เป้าหมายน้ำหนัก', style: TextStyle(color: Colors.grey[400], fontSize: 11)),
-                  Text('${_targetWeight.toStringAsFixed(1)} kg',
-                      style: const TextStyle(color: HealthTheme.orangeCalorie, fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('เป้าหมายน้ำหนัก', style: TextStyle(color: Colors.grey[400], fontSize: 11)),
+                    Text('${_targetWeight.toStringAsFixed(1)} kg',
+                        style: const TextStyle(color: HealthTheme.orangeCalorie, fontSize: 17, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             ],
           ),
@@ -304,10 +344,19 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$_calorieDeficit kcal/วัน',
-                  style: const TextStyle(color: HealthTheme.goldRBRU, fontSize: 18, fontWeight: FontWeight.bold)),
-              Text(diff > 0 ? 'คาดการณ์ถึงเป้าใน ~${weeksEst.toStringAsFixed(0)} สัปดาห์' : 'น้ำหนักตามเกณฑ์แล้ว',
-                  style: TextStyle(color: Colors.grey[300], fontSize: 11.5)),
+              Flexible(
+                child: Text('$_calorieDeficit kcal/วัน',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: HealthTheme.goldRBRU, fontSize: 17, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(diff > 0 ? 'คาดการณ์ถึงเป้าใน ~${weeksEst.toStringAsFixed(0)} สัปดาห์' : 'น้ำหนักตามเกณฑ์แล้ว',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey[300], fontSize: 11)),
+              ),
             ],
           ),
           Slider(
@@ -321,6 +370,7 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
           ),
           Wrap(
             spacing: 6,
+            runSpacing: 6,
             children: [300, 500, 750, 1000].map((d) {
               final isSel = _calorieDeficit == d;
               return ChoiceChip(
@@ -347,13 +397,16 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('แจ้งเตือนเมื่อนั่งนิ่งเกินกำหนด', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                  Text('ป้องกันภาวะดื้ออินซูลินและหลอดเลือดดำชะงัก', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                ],
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('แจ้งเตือนเมื่อนั่งนิ่งเกินกำหนด', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    Text('ป้องกันภาวะดื้ออินซูลินและหลอดเลือดดำชะงัก', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -361,7 +414,7 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text('$_sedentaryMinutes นาที',
-                    style: const TextStyle(color: HealthTheme.alertRed, fontWeight: FontWeight.bold, fontSize: 14)),
+                    style: const TextStyle(color: HealthTheme.alertRed, fontWeight: FontWeight.bold, fontSize: 13)),
               ),
             ],
           ),
@@ -374,8 +427,9 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
             inactiveColor: Colors.white12,
             onChanged: (v) => setState(() => _sedentaryMinutes = v.round()),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
             children: [15, 30, 45, 60].map((mins) {
               final isSel = _sedentaryMinutes == mins;
               return ChoiceChip(
@@ -424,7 +478,10 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
                       ),
                     ),
                     icon: const Icon(Icons.record_voice_over, size: 18),
-                    label: const Text('ทดสอบเสียงพูด "ลุกค่ะ ลุกค่ะ" ทันที'),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('ทดสอบเสียงพูด "ลุกค่ะ ลุกค่ะ" ทันที'),
+                    ),
                     onPressed: () {
                       VoiceAlertService().playSedentaryVoiceAlert(force: true);
                       ScaffoldMessenger.of(context).showSnackBar(

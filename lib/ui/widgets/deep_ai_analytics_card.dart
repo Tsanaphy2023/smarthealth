@@ -228,11 +228,14 @@ class _DeepAiAnalyticsCardState extends State<DeepAiAnalyticsCard> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: HealthTheme.cyanPrimary,
                     side: const BorderSide(color: HealthTheme.cyanPrimary),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   icon: const Icon(Icons.camera_alt_outlined, size: 16),
-                  label: const Text('บันทึกรอบ 4 ชม.', style: TextStyle(fontSize: 12)),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('บันทึกรอบ 4 ชม.', style: TextStyle(fontSize: 12)),
+                  ),
                   onPressed: () async {
                     final rec = await widget.sensor.captureAndSave4HourSnapshot();
                     if (context.mounted) {
@@ -253,7 +256,7 @@ class _DeepAiAnalyticsCardState extends State<DeepAiAnalyticsCard> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HealthTheme.cyanPrimary,
                     foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   icon: _isTraining
@@ -263,9 +266,12 @@ class _DeepAiAnalyticsCardState extends State<DeepAiAnalyticsCard> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                         )
                       : const Icon(Icons.model_training, size: 16),
-                  label: Text(
-                    _isTraining ? 'กำลังเทรน...' : 'เทรนโมเดล AI',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _isTraining ? 'กำลังเทรน...' : 'เทรนโมเดล AI',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                   ),
                   onPressed: _isTraining ? null : _handleRetrain,
                 ),
@@ -279,6 +285,9 @@ class _DeepAiAnalyticsCardState extends State<DeepAiAnalyticsCard> {
           Center(
             child: Text(
               'Deep Learning Status: 3-Layer MLP • Loss: ${engine.currentModelLoss.toStringAsFixed(3)} • Total Epochs: ${engine.trainedEpochCount}',
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(color: Colors.grey[500], fontSize: 10, fontFamily: 'monospace'),
             ),
           ),

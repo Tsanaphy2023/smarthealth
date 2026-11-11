@@ -207,9 +207,15 @@ class _ProfileSettingsDialogState extends State<ProfileSettingsDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('ดัชนีมวลกาย (BMI)', style: TextStyle(color: Colors.white60, fontSize: 12)),
-                        Text(
-                          '${preview.bmi.toStringAsFixed(1)} - ${preview.bmiCategory}',
-                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            '${preview.bmi.toStringAsFixed(1)} - ${preview.bmiCategory}',
+                            textAlign: TextAlign.end,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),
@@ -217,7 +223,11 @@ class _ProfileSettingsDialogState extends State<ProfileSettingsDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('ความยาวก้าวฐาน (Base Stride)', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                        const Flexible(
+                          child: Text('ความยาวก้าวฐาน (Base Stride)',
+                              maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white60, fontSize: 12)),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           '${(preview.baseStrideLengthM * 100).toStringAsFixed(1)} ซม.',
                           style: const TextStyle(color: HealthTheme.cyanDistance, fontSize: 12, fontWeight: FontWeight.bold),
@@ -228,7 +238,11 @@ class _ProfileSettingsDialogState extends State<ProfileSettingsDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('อัตราเผาผลาญพื้นฐาน (BMR)', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                        const Flexible(
+                          child: Text('อัตราเผาผลาญพื้นฐาน (BMR)',
+                              maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white60, fontSize: 12)),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           '${preview.bmrKcal.round()} kcal / วัน',
                           style: const TextStyle(color: HealthTheme.orangeCalorie, fontSize: 12, fontWeight: FontWeight.bold),

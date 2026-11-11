@@ -46,12 +46,16 @@ class SedentaryAlertBanner extends StatelessWidget {
               children: [
                 const Row(
                   children: [
-                    Text(
-                      'เสียงเตือน: "ลุกค่ะ ลุกค่ะ!"',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Text(
+                        'เสียงเตือน: "ลุกค่ะ ลุกค่ะ!"',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     SizedBox(width: 6),

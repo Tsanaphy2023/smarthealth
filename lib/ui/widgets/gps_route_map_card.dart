@@ -154,8 +154,10 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
                       const SizedBox(height: 2),
                       Text(
                         currentPoint != null
-                            ? '${currentPoint.latitude.toStringAsFixed(5)}°N, ${currentPoint.longitude.toStringAsFixed(5)}°E • แม่นยำ ±${currentPoint.accuracy.toStringAsFixed(1)}m'
+                            ? '${currentPoint.latitude.toStringAsFixed(5)}°N, ${currentPoint.longitude.toStringAsFixed(5)}°E • ±${currentPoint.accuracy.toStringAsFixed(1)}m'
                             : 'กำลังเชื่อมต่อสัญญาณดาวเทียม...',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.5),
                           fontSize: 10,
@@ -232,6 +234,7 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
                         Positioned(
                           top: 10,
                           left: 10,
+                          right: 50,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -270,48 +273,54 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
                               ),
                               const SizedBox(width: 6),
                               // Map Layer Switcher Pill
-                              InkWell(
-                                onTap: () => gps.cycleMapLayerMode(),
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 9, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: gps.mapLayerMode == GpsMapLayerMode.satellite
-                                        ? HealthTheme.neonCyan.withOpacity(0.88)
-                                        : Colors.black.withOpacity(0.75),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: HealthTheme.neonCyan,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        gps.mapLayerMode == GpsMapLayerMode.satellite
-                                            ? Icons.satellite_alt_rounded
-                                            : gps.mapLayerMode == GpsMapLayerMode.street
-                                                ? Icons.map_rounded
-                                                : Icons.radar_rounded,
-                                        size: 13,
-                                        color: gps.mapLayerMode == GpsMapLayerMode.satellite
-                                            ? Colors.black
-                                            : HealthTheme.neonCyan,
+                              Flexible(
+                                child: InkWell(
+                                  onTap: () => gps.cycleMapLayerMode(),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 9, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: gps.mapLayerMode == GpsMapLayerMode.satellite
+                                          ? HealthTheme.neonCyan.withOpacity(0.88)
+                                          : Colors.black.withOpacity(0.75),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: HealthTheme.neonCyan,
+                                        width: 1,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        gps.mapLayerMode.label,
-                                        style: TextStyle(
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          gps.mapLayerMode == GpsMapLayerMode.satellite
+                                              ? Icons.satellite_alt_rounded
+                                              : gps.mapLayerMode == GpsMapLayerMode.street
+                                                  ? Icons.map_rounded
+                                                  : Icons.radar_rounded,
+                                          size: 13,
                                           color: gps.mapLayerMode == GpsMapLayerMode.satellite
                                               ? Colors.black
-                                              : Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+                                              : HealthTheme.neonCyan,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            gps.mapLayerMode.label,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: gps.mapLayerMode == GpsMapLayerMode.satellite
+                                                  ? Colors.black
+                                                  : Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -370,49 +379,58 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 7, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.72),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  '${waypoints.length} จุด • ESRI Satellite WGS84',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.85),
-                                    fontSize: 9,
-                                    fontFamily: 'monospace',
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.72),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '${waypoints.length} จุด • ESRI WGS84',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.85),
+                                      fontSize: 9,
+                                      fontFamily: 'monospace',
+                                    ),
                                   ),
                                 ),
                               ),
-                              InkWell(
-                                onTap: () => gps.toggleSimulationFallback(),
-                                borderRadius: BorderRadius.circular(6),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
-                                        ? HealthTheme.neonEmerald.withOpacity(0.85)
-                                        : Colors.black.withOpacity(0.75),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: InkWell(
+                                  onTap: () => gps.toggleSimulationFallback(),
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
                                       color: (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
-                                          ? HealthTheme.neonEmerald
-                                          : HealthTheme.neonOrange.withOpacity(0.7),
+                                          ? HealthTheme.neonEmerald.withOpacity(0.85)
+                                          : Colors.black.withOpacity(0.75),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
+                                            ? HealthTheme.neonEmerald
+                                            : HealthTheme.neonOrange.withOpacity(0.7),
+                                      ),
                                     ),
-                                  ),
-                                  child: Text(
-                                    (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
-                                        ? '🛰️ สัญญาณ GPS ดาวเทียมจริง'
-                                        : '🎮 โหมดจำลองพิกัด (แตะสลับ GPS จริง)',
-                                    style: TextStyle(
-                                      color: (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
-                                          ? Colors.black
-                                          : HealthTheme.neonOrange,
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.bold,
+                                    child: Text(
+                                      (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
+                                          ? '🛰️ GPS ดาวเทียมจริง'
+                                          : '🎮 จำลองพิกัด (แตะสลับ GPS)',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: (!gps.useSimulationFallback && gps.hasHardwareGpsSignal)
+                                            ? Colors.black
+                                            : HealthTheme.neonOrange,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -489,16 +507,19 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
                       color: Colors.black,
                       size: 20,
                     ),
-                    label: Text(
-                      !gps.isTracking
-                          ? 'เริ่มบันทึกเส้นทาง'
-                          : gps.isPaused
-                              ? 'บันทึกต่อ'
-                              : 'พักการเดินทาง',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        !gps.isTracking
+                            ? 'เริ่มบันทึกเส้นทาง'
+                            : gps.isPaused
+                                ? 'บันทึกต่อ'
+                                : 'พักการเดินทาง',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
