@@ -437,7 +437,7 @@ if (magnitude > 32.0 && !_isFallWarningActive) {
 \end{codebox}
 
 \section{ปฏิบัติการที่ 5.10 การพัฒนาเว็บแดชบอร์ดแผนที่ภาพถ่ายดาวเทียมและ REST API ฐานข้อมูล SQLite3}
-ในปฏิบัติการสุดท้าย ผู้เรียนจะเชื่อมต่อแอปพลิเคชันสมาร์ทโฟนเข้ากับระบบเว็บแดชบอร์ด (\texttt{index.html}) และส่วนบริการข้อมูลหลังบ้าน (\texttt{api.php}) ที่จัดเก็บข้อมูลลงในฐานข้อมูล SQLite3 (\texttt{health\_data.db}) พร้อมแสดงผลแผนที่ภาพถ่ายดาวเทียมความละเอียดสูงผ่านไลบรารี Leaflet.js และ ESRI World Imagery Satellite รองรับทั้งโหมดเดินเพื่อสุขภาพ วิ่งออกกำลังกาย และปั่นจักรยาน
+ในปฏิบัติการนี้ ผู้เรียนจะเชื่อมต่อแอปพลิเคชันสมาร์ทโฟนเข้ากับระบบเว็บแดชบอร์ด (\texttt{index.html}) และส่วนบริการข้อมูลหลังบ้าน (\texttt{api.php}) ที่จัดเก็บข้อมูลลงในฐานข้อมูล SQLite3 (\texttt{health\_data.db}) พร้อมแสดงผลแผนที่ภาพถ่ายดาวเทียมความละเอียดสูงผ่านไลบรารี Leaflet.js และ ESRI World Imagery Satellite รองรับทั้งโหมดเดินเพื่อสุขภาพ วิ่งออกกำลังกาย และปั่นจักรยาน
 
 \begin{codebox}
 \textbf{การเรนเดอร์แผนที่ภาพถ่ายดาวเทียมและเส้นทางหลายประเภทกีฬาใน index.html}
@@ -454,14 +454,97 @@ routePolyline = L.polyline([], {
 \end{lstlisting}
 \end{codebox}
 
+\section{ปฏิบัติการที่ 5.11 การพัฒนาบริการเบื้องหลังนับก้าวอัตโนมัติ 24 ชั่วโมง และการตั้งเวลาอัตโนมัติ}
+เพื่อให้ทั้งสองแอปพลิเคชัน (\textbf{ChewaPulse xAI} และ \textbf{SciRBRU Move+AI}) สามารถเริ่มนับจำนวนก้าวโดยอัตโนมัติตามช่วงเวลาที่ผู้ใช้งานกำหนด และบันทึกข้อมูลต่อเนื่องตลอด 24 ชั่วโมงแม้ในขณะปัดปิดแอปพลิเคชันออกจากหน้าจอ ผู้เรียนจะสร้างบริการเบื้องหลังระดับเนทีฟของแอนดรอยด์ (\texttt{StepForegroundService.kt}) และตัวรับสัญญาณปลุกตามเวลา (\texttt{AutoStepBroadcastReceiver.kt}) ที่อ่านและเขียนข้อมูลลงใน \texttt{FlutterSharedPreferences} โดยตรง
+
+\begin{codebox}
+\textbf{บริการเบื้องหลังนับก้าวต่อเนื่อง 24 ชั่วโมงใน StepForegroundService.kt}
+\begin{lstlisting}
+class StepForegroundService : Service(), SensorEventListener {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(NOTIFICATION_ID, buildNotification(getTodaySavedSteps()))
+        registerStepSensors() // TYPE_STEP_COUNTER + TYPE_ACCELEROMETER
+        AutoStepBroadcastReceiver.scheduleNextAlarms(applicationContext)
+        return START_STICKY // ทำงานต่อเนื่อง 24 ชม. แม้แอปถูกปัดปิด
+    }
+
+    private fun incrementStepCount(stepsToAdd: Int) {
+        if (!isWithinScheduledWindow()) return
+        val prefs = getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
+        val todayKey = "flutter.steps_" + getTodayKey()
+        val updated = prefs.getLong(todayKey, 0L) + stepsToAdd
+        prefs.edit().putLong(todayKey, updated).apply()
+        updateNotification(updated.toInt())
+    }
+}
+\end{lstlisting}
+\end{codebox}
+
+\section{ปฏิบัติการที่ 5.12 การพัฒนาระบบฐานข้อมูลกลาง OKR Key Result 3.2 (ก้าวสะสมรวมบุคลากรคณะวิทยาศาสตร์ฯ > 10 ล้านก้าว)}
+ในปฏิบัติการสุดท้าย ผู้เรียนจะพัฒนาโครงสร้างฐานข้อมูลกลางและบริการซิงโครไนซ์อัตโนมัติเพื่อรองรับตัวชี้วัด \textbf{OKR Key Result 3.2 ของคณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏรำไพพรรณี (ก้าวสะสมรวมของบุคลากรในคณะมากกว่า 10,000,000 ก้าว ในปีงบประมาณ พ.ศ. 2570)} รองรับบุคลากรกว่า 64 ท่าน ครบทั้ง 9 สาขาวิชา/หน่วยงาน พร้อมฟังก์ชันส่งออกรายงานไฟล์ CSV สำหรับงานแผนและประกันคุณภาพการศึกษา
+
+\begin{codebox}
+\textbf{โครงสร้างตารางฐานข้อมูลกลาง OKR 3.2 และการบันทึกแบบ Idempotent Upsert ใน api.php}
+\begin{lstlisting}
+CREATE TABLE IF NOT EXISTS scirbru_staff (
+    staff_id TEXT PRIMARY KEY,
+    full_name TEXT NOT NULL,
+    department TEXT NOT NULL,
+    staff_type TEXT DEFAULT 'สายวิชาการ',
+    individual_goal INTEGER DEFAULT 166667
+);
+
+CREATE TABLE IF NOT EXISTS scirbru_daily_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    staff_id TEXT NOT NULL,
+    record_date TEXT NOT NULL,
+    steps INTEGER NOT NULL DEFAULT 0,
+    distance_km REAL NOT NULL DEFAULT 0.0,
+    calories_kcal REAL NOT NULL DEFAULT 0.0,
+    active_minutes INTEGER NOT NULL DEFAULT 0,
+    source_app TEXT DEFAULT 'SciRBRU Move+AI',
+    UNIQUE(staff_id, record_date)
+);
+\end{lstlisting}
+\end{codebox}
+
+\begin{codebox}
+\textbf{บริการซิงโครไนซ์ก้าวเดินของบุคลากรเข้าสู่ฐานข้อมูลกลางคณะใน OkrSyncService.dart}
+\begin{lstlisting}[language=Dart]
+Future<bool> syncStaffSteps({
+  required int todaySteps,
+  required double distanceKm,
+  required double caloriesKcal,
+  required int activeMinutes,
+  String sourceApp = 'SciRBRU Move+AI',
+}) async {
+  final response = await http.post(
+    Uri.parse('$_apiBaseUrl?action=okr_sync'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'staff_id': _selectedStaffId,
+      'full_name': _selectedStaffName,
+      'department': _selectedDepartment,
+      'steps': todaySteps,
+      'distance_km': distanceKm,
+      'calories_kcal': caloriesKcal,
+      'active_minutes': activeMinutes,
+      'source_app': sourceApp,
+    }),
+  );
+  return response.statusCode == 200;
+}
+\end{lstlisting}
+\end{codebox}
+
 \section*{คำถามทบทวนท้ายบทที่ 5}
 \addcontentsline{toc}{section}{คำถามทบทวนท้ายบทที่ 5}
 \begin{enumerate}
     \item เพราะเหตุใดจึงต้องกำหนดสิทธิ์ \texttt{HIGH\_SAMPLING\_RATE\_SENSORS} และสิทธิ์ \texttt{ACCESS\_FINE\_LOCATION} ในไฟล์ \texttt{AndroidManifest.xml}
     \item หากต้องการปรับแต่งอัลกอริทึมให้ตรวจจับการวิ่งเร็วได้ดียิ่งขึ้น ควรปรับพารามิเตอร์ใดในคลาส \texttt{StepDetectionEngine}
     \item จงอธิบายขั้นตอนการทำงานของ Forward Propagation และ Backpropagation ที่เกิดขึ้นภายในคลาส \texttt{DeepHealthAiEngine} บนสมาร์ทโฟน
-    \item เพราะเหตุใดระบบจึงต้องบันทึกข้อมูลสแนปชอตสรีรวิทยาอัตโนมัติทุก 4 ชั่วโมง เพื่อนำไปใช้วิเคราะห์ร่วมกับโครงข่ายประสาทเทียม
-    \item จงอธิบายกลไกการคำนวณระยะทาง Great-Circle Distance ในคลาส \texttt{GpsWaypoint} และการกรองสัญญาณสะท้อนเทียม (Multipath Noise Filter)
+    \item จงอธิบายกลไกการทำงานร่วมกันระหว่าง \texttt{StepForegroundService.kt} และ \texttt{FlutterSharedPreferences} ในการบันทึกก้าวเดินต่อเนื่อง 24 ชั่วโมง
+    \item จงอธิบายการออกแบบตาราง \texttt{scirbru\_staff} และ \texttt{scirbru\_daily\_steps} เพื่อรองรับการสะสมก้าวเดินของบุคลากร 64 คนสู่เป้าหมาย 10,000,000 ก้าวตาม OKR Key Result 3.2
     \item จงอธิบายขั้นตอนการแปลงพิกัดภูมิศาสตร์สู่พิกัดระนาบ 2 มิติของหน้าจอด้วยคลาส \texttt{CustomPainter} ในแอปพลิเคชัน Flutter
 \end{enumerate}
 \clearpage
