@@ -343,3 +343,4 @@ class WeeklyHistoryCard extends StatelessWidget {
     );
   }
 }
+

@@ -159,3 +159,4 @@ class DailyHistorySummary {
   double get completionRatio => (steps / (stepGoal > 0 ? stepGoal : 10000)).clamp(0.0, 1.5);
   bool get isGoalMet => steps >= stepGoal;
 }
+
