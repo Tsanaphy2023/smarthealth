@@ -619,43 +619,66 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
   Widget _buildControls(MovementSensorService sensor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            flex: 3,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: sensor.isSimulating ? HealthTheme.orangeCalorie : HealthTheme.surfaceElevated,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: sensor.isSimulating ? HealthTheme.orangeCalorie : HealthTheme.border,
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: sensor.isSimulating ? HealthTheme.orangeCalorie : HealthTheme.surfaceElevated,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: sensor.isSimulating ? HealthTheme.orangeCalorie : HealthTheme.border,
+                      ),
+                    ),
+                  ),
+                  onPressed: () => sensor.toggleSimulation(),
+                  icon: Icon(sensor.isSimulating ? Icons.stop_circle : Icons.directions_walk, size: 18),
+                  label: Text(
+                    sensor.isSimulating ? 'หยุดการจำลองเดิน' : 'จำลองการเดินต่อเนื่อง',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
-              onPressed: () => sensor.toggleSimulation(),
-              icon: Icon(sensor.isSimulating ? Icons.stop_circle : Icons.directions_walk, size: 18),
-              label: Text(
-                sensor.isSimulating ? 'หยุดการจำลองเดิน' : 'จำลองการเดินต่อเนื่อง',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: HealthTheme.emeraldStep,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: HealthTheme.emeraldStep, width: 1.2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () => sensor.addManualStep(),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('+1 ก้าว', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            flex: 2,
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                foregroundColor: HealthTheme.emeraldStep,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                side: const BorderSide(color: HealthTheme.emeraldStep, width: 1.2),
+                foregroundColor: HealthTheme.alertRed,
+                backgroundColor: HealthTheme.alertRed.withOpacity(0.1),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: BorderSide(color: HealthTheme.alertRed.withOpacity(0.65), width: 1.2),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              onPressed: () => sensor.addManualStep(),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('+1 ก้าว', style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: () => sensor.triggerSedentaryAlertDemo(),
+              icon: const Icon(Icons.record_voice_over_rounded, size: 18),
+              label: Text(
+                '🔊 ทดสอบเสียงเตือนหยุดนิ่ง 30 นาที: "ลุกคะ ลุกค่ะ!" (นิ่งปัจจุบัน ${sensor.sedentaryMinutes}/${sensor.sedentaryAlertMinutes} นาที)',
+                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ],

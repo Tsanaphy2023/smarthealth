@@ -584,6 +584,14 @@ class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// จำลองสถานะหยุดนิ่งครบ 30 นาทีและส่งเสียงพูดเตือน "ลุกคะ ลุกค่ะ" ทันที
+  void triggerSedentaryAlertDemo() {
+    _currentActivity = ActivityType.stationary;
+    _sedentarySeconds = _sedentaryAlertMinutes * 60;
+    VoiceAlertService().playSedentaryVoiceAlert(force: true);
+    notifyListeners();
+  }
+
   /// รีเซตข้อมูลทั้งหมดเป็น 0 (Reset All to 0)
   void resetAllToZero() {
     _todaySteps = 0;

@@ -8,6 +8,9 @@ class VoiceAlertService {
   factory VoiceAlertService() => _instance;
   VoiceAlertService._internal();
 
+  static const MethodChannel _ttsChannel =
+      MethodChannel('com.rbru.health.smart_health_tracker/tts_voice');
+
   bool _isVoiceEnabled = true;
   bool _isPlaying = false;
   DateTime? _lastAlertTime;
@@ -20,7 +23,7 @@ class VoiceAlertService {
     _isVoiceEnabled = enabled;
   }
 
-  /// เล่นเสียงสัญญาณกระตุ้นการขยับและเสียงพูดเตือนภาษาไทย "ลุกค่ะ ลุกค่ะ"
+  /// เล่นเสียงสัญญาณกระตุ้นการขยับและเสียงพูดเตือนภาษาไทย "ลุกคะ ลุกค่ะ"
   Future<void> playSedentaryVoiceAlert({bool force = false}) async {
     if (!_isVoiceEnabled && !force) return;
 
@@ -34,22 +37,25 @@ class VoiceAlertService {
     _isPlaying = true;
 
     try {
-      // 1. ส่งสัญญาณเสียงกระดิ่งความถี่กังวานของระบบ (System Chime)
+      // 1. ส่งสัญญาณเสียงกระดิ่งความถี่กังวานและสั่นเตือน
       await SystemSound.play(SystemSoundType.alert);
       HapticFeedback.heavyImpact();
 
-      await Future.delayed(const Duration(milliseconds: 300));
-      await SystemSound.play(SystemSoundType.click);
-      HapticFeedback.mediumImpact();
+      // 2. สังเคราะห์เสียงพูดภาษาไทยแท้ผ่าน Native Android TTS ("ลุกคะ ลุกค่ะ")
+      if (!kIsWeb) {
+        try {
+          await _ttsChannel.invokeMethod('speakThai', {
+            'text': spokenPhraseThai,
+          });
+        } catch (ttsErr) {
+          debugPrint('[i] Native TTS notice: $ttsErr');
+        }
+      }
 
-      // 2. เรียกใช้การสังเคราะห์เสียงหรือแจ้งเตือนเชิงโต้ตอบ
-      debugPrint('[VOICE ALERT] "ลุกค่ะ ลุกค่ะ! นั่งนิ่งนานเกิน 30 นาทีแล้ว ได้เวลาลุกขึ้นยืดเส้นยืดสายและขยับร่างกายแล้วค่ะ!"');
+      debugPrint('[VOICE ALERT] "$spokenPhraseThai"');
 
-      // ทำจังหวะเสียงกังวานซ้ำอีกระลอก เพื่อให้ได้ยินชัดเจน
       await Future.delayed(const Duration(milliseconds: 650));
-      await SystemSound.play(SystemSoundType.alert);
       HapticFeedback.heavyImpact();
-
     } catch (e) {
       debugPrint('[!] VoiceAlertService playback error: $e');
     } finally {
@@ -63,6 +69,13 @@ class VoiceAlertService {
     try {
       await SystemSound.play(SystemSoundType.alert);
       HapticFeedback.vibrate();
+      if (!kIsWeb) {
+        try {
+          await _ttsChannel.invokeMethod('speakThai', {
+            'text': 'ระวังค่ะ ตรวจพบแรงกระแทกหรือการเคลื่อนไหวฉับพลัน กรุณาตรวจสอบความปลอดภัยด้วยค่ะ',
+          });
+        } catch (_) {}
+      }
       await Future.delayed(const Duration(milliseconds: 250));
       HapticFeedback.vibrate();
       debugPrint('[FALL WARNING] ตรวจพบแรงกระแทกหรือการเคลื่อนไหวฉับพลัน กรุณาตรวจสอบความปลอดภัย!');
@@ -72,5 +85,5 @@ class VoiceAlertService {
   }
 
   /// ข้อความเสียงพูดภาษาไทยมาตรฐาน
-  static const String spokenPhraseThai = 'ลุกค่ะ ลุกค่ะ! นั่งนานเกิน 30 นาทีแล้ว ได้เวลาลุกขึ้นยืดเส้นยืดสายและขยับร่างกายแล้วค่ะ';
+  static const String spokenPhraseThai = 'ลุกคะ ลุกค่ะ! คุณหยุดนิ่งนานเกิน 30 นาทีแล้ว ได้เวลาลุกขึ้นยืดเส้นยืดสายและขยับร่างกายแล้วค่ะ';
 }

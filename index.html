@@ -659,6 +659,7 @@
                     <button class="btn-action" onclick="simulateWalk(50)">🚶 +50 ก้าวเดิน</button>
                     <button class="btn-action" onclick="simulateWalk(200)">🏃 +200 ก้าววิ่ง</button>
                     <button class="btn-action" onclick="simulateCycling()">🚴 ปั่นจักรยาน (+1.5 km)</button>
+                    <button class="btn-action" style="color: #FFAE00; border-color: rgba(255,174,0,0.4); background: rgba(255,174,0,0.1);" onclick="speakSedentaryVoiceAlert(true)">🔊 เสียงเตือน 30 นาที: "ลุกคะ ลุกค่ะ"</button>
                     <button class="btn-action" onclick="syncWithApi()">☁️ บันทึกลง API</button>
                     <button class="btn-action" style="color: var(--coral-alert); border-color: rgba(255,77,109,0.3);" onclick="resetSteps()">🔄 รีเซตเป็น 0</button>
                 </div>
@@ -1201,6 +1202,54 @@
         }
 
         // Initialize on load
+        let sedentarySec = 0;
+
+        function playWebChime() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                [880, 1174.66].forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.18, ctx.currentTime + idx * 0.18);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.18 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + idx * 0.18);
+                    osc.stop(ctx.currentTime + idx * 0.18 + 0.26);
+                });
+            } catch (e) {}
+        }
+
+        function speakSedentaryVoiceAlert(isManualTest = false) {
+            playWebChime();
+            const phrase = 'ลุกคะ ลุกค่ะ! คุณหยุดนิ่งนานเกิน 30 นาทีแล้ว ได้เวลาลุกขึ้นยืดเส้นยืดสายและขยับร่างกายแล้วค่ะ';
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(phrase);
+                utter.lang = 'th-TH';
+                utter.rate = 1.0;
+                utter.pitch = 1.08;
+                window.speechSynthesis.speak(utter);
+            }
+            const msgBox = document.getElementById('aiMessage');
+            if (msgBox) {
+                msgBox.innerHTML = '🔊 <strong style="color: #FF4D6D;">เสียงเตือนอัตโนมัติ (หยุดนิ่งเกิน 30 นาที):</strong> "ลุกคะ ลุกค่ะ! คุณหยุดนิ่งนานเกิน 30 นาทีแล้ว ได้เวลาลุกขึ้นยืดเส้นยืดสายและขยับร่างกายแล้วค่ะ"';
+            }
+        }
+
+        setInterval(() => {
+            if (currentActivity === 'stationary' && !isGpsTracking) {
+                sedentarySec++;
+                if (sedentarySec === 1800 || (sedentarySec > 1800 && sedentarySec % 300 === 0)) {
+                    speakSedentaryVoiceAlert(false);
+                }
+            } else {
+                sedentarySec = 0;
+            }
+        }, 1000);
+
         window.addEventListener('DOMContentLoaded', () => {
             initChart();
             initSatelliteMap();

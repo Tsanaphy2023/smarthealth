@@ -7,19 +7,26 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
+import android.speech.tts.TextToSpeech
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.MethodChannel
+import java.util.Locale
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterActivity(), TextToSpeech.OnInitListener {
     private var wakeLock: PowerManager.WakeLock? = null
     private var locationManager: LocationManager? = null
     private var gpsEventSink: EventChannel.EventSink? = null
+    private var tts: TextToSpeech? = null
+    private var isTtsReady = false
 
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
@@ -45,12 +52,58 @@ class MainActivity : FlutterActivity() {
                 gpsEventSink = null
             }
         })
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.rbru.health.smart_health_tracker/tts_voice"
+        ).setMethodCallHandler { call, result ->
+            if (call.method == "speakThai") {
+                val text = call.argument<String>("text")
+                    ?: "ลุกคะ ลุกค่ะ คุณหยุดนิ่งนานเกิน 30 นาทีแล้ว ได้เวลาลุกขึ้นขยับร่างกายแล้วค่ะ"
+                speakThaiPhrase(text)
+                result.success(true)
+            } else {
+                result.notImplemented()
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        tts = TextToSpeech(this, this)
         requestStepAndLocationPermissions()
         acquirePocketWakeLock()
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            val thaiLocale = Locale("th", "TH")
+            val res = tts?.setLanguage(thaiLocale)
+            if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                tts?.setLanguage(Locale.forLanguageTag("th"))
+            }
+            tts?.setPitch(1.06f)
+            tts?.setSpeechRate(1.0f)
+            isTtsReady = true
+        }
+    }
+
+    private fun speakThaiPhrase(text: String) {
+        try {
+            val toneGen = ToneGenerator(AudioManager.STREAM_ALARM, 90)
+            toneGen.startTone(ToneGenerator.TONE_PROP_ACK, 300)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        try {
+            if (isTtsReady && tts != null) {
+                val params = Bundle()
+                params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
+                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "smart_health_voice_alert")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun requestStepAndLocationPermissions() {
@@ -160,6 +213,8 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         try {
+            tts?.stop()
+            tts?.shutdown()
             locationManager?.removeUpdates(locationListener)
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()
