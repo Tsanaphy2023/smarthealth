@@ -7,6 +7,7 @@ import '../../services/movement_sensor_service.dart';
 import '../../services/gps_tracking_service.dart';
 import '../theme/health_theme.dart';
 import '../widgets/activity_ring_progress.dart';
+import '../widgets/auto_schedule_control_card.dart';
 import '../widgets/cadence_and_hydration_card.dart';
 import '../widgets/comprehensive_goals_dialog.dart';
 import '../widgets/deep_ai_analytics_card.dart';
@@ -548,6 +549,8 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          AutoScheduleControlCard(sensor: sensor),
+          const SizedBox(height: 16),
           _buildProfileSummaryCard(sensor),
           const SizedBox(height: 16),
           SizedBox(
@@ -605,6 +608,8 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
             ),
           const SizedBox(height: 6),
           ActivityRingProgress(metric: metric, onGoalTap: _openComprehensiveGoalsDialog),
+          const SizedBox(height: 14),
+          AutoScheduleControlCard(sensor: sensor),
           const SizedBox(height: 16),
           KineticAvatarWidget(
             activity: metric.currentActivity,
@@ -677,6 +682,8 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
                 child: Column(
                   children: [
                     ActivityRingProgress(metric: metric, onGoalTap: _openComprehensiveGoalsDialog),
+                    const SizedBox(height: 14),
+                    AutoScheduleControlCard(sensor: sensor),
                     const SizedBox(height: 16),
                     KineticAvatarWidget(
                       activity: metric.currentActivity,
@@ -749,6 +756,8 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
                 child: Column(
                   children: [
                     ActivityRingProgress(metric: metric, onGoalTap: _openComprehensiveGoalsDialog),
+                    const SizedBox(height: 14),
+                    AutoScheduleControlCard(sensor: sensor),
                     const SizedBox(height: 18),
                     _buildProfileSummaryCard(sensor),
                     const SizedBox(height: 18),

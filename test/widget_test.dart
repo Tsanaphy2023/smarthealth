@@ -83,6 +83,33 @@ void main() {
       gps.cycleMapLayerMode();
       expect(gps.mapLayerMode, equals(GpsMapLayerMode.satellite));
     });
+
+    test('Automatic 24-hour and user-scheduled step counting window works accurately', () async {
+      final service = MovementSensorService();
+      expect(service.isAutoTrackEnabled, isTrue);
+      expect(service.isAuto24HourMode, isTrue);
+      expect(service.isWithinScheduledWindow(DateTime(2026, 11, 11, 2, 30)), isTrue);
+
+      await service.updateAutoScheduleSettings(
+        autoTrackEnabled: true,
+        auto24HourMode: false,
+        startHour: 6,
+        startMinute: 30,
+        endHour: 21,
+        endMinute: 0,
+      );
+      expect(service.formattedAutoStartTime, equals('06:30'));
+      expect(service.formattedAutoEndTime, equals('21:00'));
+      expect(service.isWithinScheduledWindow(DateTime(2026, 11, 11, 10, 15)), isTrue);
+      expect(service.isWithinScheduledWindow(DateTime(2026, 11, 11, 4, 0)), isFalse);
+
+      // Restore 24h continuous mode
+      await service.updateAutoScheduleSettings(
+        autoTrackEnabled: true,
+        auto24HourMode: true,
+      );
+      expect(service.isAuto24HourMode, isTrue);
+    });
   });
 
   testWidgets('SmartHealthTrackerApp renders without overflow across 320dp, 360dp, 768dp, and 1280dp viewports',

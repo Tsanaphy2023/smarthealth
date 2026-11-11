@@ -3,6 +3,7 @@ package com.rbru.health.smart_health_tracker
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -19,6 +20,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
+import java.util.Calendar
 import java.util.Locale
 
 class MainActivity : FlutterActivity(), TextToSpeech.OnInitListener {
@@ -66,6 +68,29 @@ class MainActivity : FlutterActivity(), TextToSpeech.OnInitListener {
                 result.notImplemented()
             }
         }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.rbru.health.smart_health_tracker/background_service"
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "configureAndSyncBackgroundService" -> {
+                    startBackgroundStepService(StepForegroundService.ACTION_SYNC_CONFIG)
+                    val todaySteps = readTodayStepsFromPrefs()
+                    result.success(
+                        mapOf(
+                            "serviceRunning" to true,
+                            "todaySteps" to todaySteps
+                        )
+                    )
+                }
+                "resetBackgroundSteps" -> {
+                    startBackgroundStepService(StepForegroundService.ACTION_RESET_STEPS)
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,6 +98,40 @@ class MainActivity : FlutterActivity(), TextToSpeech.OnInitListener {
         tts = TextToSpeech(this, this)
         requestStepAndLocationPermissions()
         acquirePocketWakeLock()
+        startBackgroundStepService(StepForegroundService.ACTION_SYNC_CONFIG)
+    }
+
+    private fun startBackgroundStepService(actionStr: String) {
+        try {
+            val serviceIntent = Intent(this, StepForegroundService::class.java).apply {
+                action = actionStr
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun readTodayStepsFromPrefs(): Long {
+        return try {
+            val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            val cal = Calendar.getInstance()
+            val y = cal.get(Calendar.YEAR)
+            val m = cal.get(Calendar.MONTH) + 1
+            val d = cal.get(Calendar.DAY_OF_MONTH)
+            val key = "flutter.health_steps_${y}_${m}_${d}"
+            try {
+                prefs.getLong(key, 0L)
+            } catch (_: ClassCastException) {
+                prefs.getInt(key, 0).toLong()
+            }
+        } catch (_: Exception) {
+            0L
+        }
     }
 
     override fun onInit(status: Int) {
@@ -132,6 +191,7 @@ class MainActivity : FlutterActivity(), TextToSpeech.OnInitListener {
             ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), 1001)
         } else {
             startHardwareGpsUpdates()
+            startBackgroundStepService(StepForegroundService.ACTION_SYNC_CONFIG)
         }
     }
 
@@ -143,6 +203,7 @@ class MainActivity : FlutterActivity(), TextToSpeech.OnInitListener {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1001) {
             startHardwareGpsUpdates()
+            startBackgroundStepService(StepForegroundService.ACTION_SYNC_CONFIG)
         }
     }
 
@@ -162,7 +223,6 @@ class MainActivity : FlutterActivity(), TextToSpeech.OnInitListener {
             }
             val lm = locationManager ?: return
 
-            // Send last known location immediately if available
             val lastGps = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                 ?: lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
             if (lastGps != null) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:sensors_plus/sensors_plus.dart';
@@ -19,6 +20,10 @@ class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
   factory MovementSensorService() => _instance;
   MovementSensorService._internal();
 
+  static const MethodChannel _bgChannel = MethodChannel(
+    'com.rbru.health.smart_health_tracker/background_service',
+  );
+
   StreamSubscription<UserAccelerometerEvent>? _accelSubscription;
   StreamSubscription<AccelerometerEvent>? _rawAccelSubscription;
   StreamSubscription<StepCount>? _stepCountSubscription;
@@ -32,6 +37,7 @@ class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _decayTimer;
   Timer? _cadenceAndSedentaryTimer;
   Timer? _fourHourSnapshotTimer;
+  Timer? _backgroundSyncTimer;
 
   // Personalized Health Profile & Goals
   AppBrandEdition _brandEdition = AppBrandEdition.chewaPulseXai;
@@ -44,7 +50,17 @@ class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
   bool _isVoiceAlertEnabled = true;
   final Map<String, int> _pastDaysSteps = {};
 
-  // Real-time sensor state (เริ่มต้นทุกอย่างเป็น 0 ทั้งหมด)
+  // Automatic 24-Hour & Scheduled Step Counting Configuration
+  bool _isAutoTrackEnabled = true;
+  bool _isAuto24HourMode = true; // true = นับตลอด 24 ชม. (00:00 - 23:59), false = นับตามช่วงเวลาที่กำหนดเอง
+  int _autoStartHour = 6;
+  int _autoStartMinute = 0;
+  int _autoEndHour = 22;
+  int _autoEndMinute = 0;
+  bool _isBackgroundServiceRunning = true;
+  String _currentDateKey = HealthStorageService.dateKeyFor(DateTime.now());
+
+  // Real-time sensor state
   int _todaySteps = 0;
   double _motionIntensity = 0.0; // 0.0 to 1.0
   ActivityType _currentActivity = ActivityType.stationary;
@@ -67,7 +83,7 @@ class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
   DateTime _currentIntervalStartTime = DateTime.now();
   int _stepsAtIntervalStart = 0;
 
-  // Hourly steps distribution (0..23) เริ่มต้นว่างเปล่า 0 ทั้งหมด
+  // Hourly steps distribution (0..23)
   final Map<int, int> _hourlySteps = {};
 
   bool _isSimulating = false;
@@ -84,12 +100,58 @@ class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
   int get dailyWaterGoalMl => _dailyWaterGoalMl;
   bool get isVoiceAlertEnabled => _isVoiceAlertEnabled;
 
+  // Automatic 24h & Schedule Getters
+  bool get isAutoTrackEnabled => _isAutoTrackEnabled;
+  bool get isAuto24HourMode => _isAuto24HourMode;
+  int get autoStartHour => _autoStartHour;
+  int get autoStartMinute => _autoStartMinute;
+  int get autoEndHour => _autoEndHour;
+  int get autoEndMinute => _autoEndMinute;
+  bool get isBackgroundServiceRunning => _isBackgroundServiceRunning;
+
+  String get formattedAutoStartTime =>
+      '${_autoStartHour.toString().padLeft(2, '0')}:${_autoStartMinute.toString().padLeft(2, '0')}';
+
+  String get formattedAutoEndTime =>
+      '${_autoEndHour.toString().padLeft(2, '0')}:${_autoEndMinute.toString().padLeft(2, '0')}';
+
+  String get scheduleStatusDescription {
+    if (!_isAutoTrackEnabled) {
+      return 'ปิดการนับก้าวอัตโนมัติชั่วคราว';
+    }
+    if (_isAuto24HourMode) {
+      return 'ทำงานอัตโนมัติ 24 ชม. (00:00 - 23:59 น.) • นับต่อเนื่องแม้ปิดแอป';
+    }
+    final activeNow = isWithinScheduledWindow();
+    return activeNow
+        ? 'กำลังนับก้าวอัตโนมัติตามเวลา ($formattedAutoStartTime - $formattedAutoEndTime น.)'
+        : 'ตั้งเวลาเริ่มนับอัตโนมัติ $formattedAutoStartTime - $formattedAutoEndTime น. (รอรอบเวลา)';
+  }
+
+  /// ตรวจสอบว่าเวลาปัจจุบันอยู่ในช่วงเวลาที่อนุญาตให้นับก้าวอัตโนมัติหรือไม่
+  bool isWithinScheduledWindow([DateTime? checkTime]) {
+    if (!_isAutoTrackEnabled) return false;
+    if (_isAuto24HourMode) return true;
+
+    final now = checkTime ?? DateTime.now();
+    final currentMins = now.hour * 60 + now.minute;
+    final startMins = _autoStartHour * 60 + _autoStartMinute;
+    final endMins = _autoEndHour * 60 + _autoEndMinute;
+
+    if (startMins <= endMins) {
+      return currentMins >= startMins && currentMins <= endMins;
+    } else {
+      // กรณีตั้งเวลาข้ามคืน เช่น 22:00 ถึง 06:00 น.
+      return currentMins >= startMins || currentMins <= endMins;
+    }
+  }
+
   double get motionIntensity => _motionIntensity;
   ActivityType get currentActivity => _currentActivity;
   int get activeMinutes => (_activeSeconds ~/ 60);
   int get cadenceSpm => _cadenceSpm;
   int get sedentaryMinutes => _sedentarySeconds ~/ 60;
-  
+
   /// เตือนเมื่ออยู่นิ่งนานกว่าเกณฑ์ที่กำหนด (ค่าเริ่มต้น 30 นาที)
   bool get needsActiveBreak => _sedentarySeconds >= (_sedentaryAlertMinutes * 60);
   bool get isSimulating => _isSimulating;
@@ -175,6 +237,35 @@ class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
     } catch (_) {}
   }
 
+  /// อัปเดตการตั้งค่าเวลานับก้าวอัตโนมัติและโหมดทำงานตลอด 24 ชั่วโมง
+  Future<void> updateAutoScheduleSettings({
+    bool? autoTrackEnabled,
+    bool? auto24HourMode,
+    int? startHour,
+    int? startMinute,
+    int? endHour,
+    int? endMinute,
+  }) async {
+    if (autoTrackEnabled != null) _isAutoTrackEnabled = autoTrackEnabled;
+    if (auto24HourMode != null) _isAuto24HourMode = auto24HourMode;
+    if (startHour != null) _autoStartHour = startHour.clamp(0, 23);
+    if (startMinute != null) _autoStartMinute = startMinute.clamp(0, 59);
+    if (endHour != null) _autoEndHour = endHour.clamp(0, 23);
+    if (endMinute != null) _autoEndMinute = endMinute.clamp(0, 59);
+
+    notifyListeners();
+
+    try {
+      await HealthStorageService.setAutoTrackEnabled(_isAutoTrackEnabled);
+      await HealthStorageService.setAuto24HourMode(_isAuto24HourMode);
+      await HealthStorageService.setAutoStartHour(_autoStartHour);
+      await HealthStorageService.setAutoStartMinute(_autoStartMinute);
+      await HealthStorageService.setAutoEndHour(_autoEndHour);
+      await HealthStorageService.setAutoEndMinute(_autoEndMinute);
+      await _syncNativeBackgroundService();
+    } catch (_) {}
+  }
+
   /// สร้างข้อมูลสถิติย้อนหลัง 7 วัน (Weekly History)
   List<DailyHistorySummary> get weeklyHistory {
     const thaiShortDays = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'];
@@ -226,6 +317,7 @@ class MovementSensorService extends ChangeNotifier with WidgetsBindingObserver {
 (${_brandEdition.thaiName})
 ${_brandEdition.tagline}
 =========================================
+• โหมดนับก้าวอัตโนมัติ: $scheduleStatusDescription
 • ข้อมูลร่างกาย: น้ำหนัก ${_profile.weightKg.toStringAsFixed(1)} kg | ส่วนสูง ${_profile.heightCm.toStringAsFixed(0)} cm | BMI ${_profile.bmi.toStringAsFixed(1)} (${_profile.bmiCategory})
 • เป้าหมายประจำวัน: $_dailyGoal ก้าว | เป้าหมายน้ำหนัก: ${_targetWeightKg.toStringAsFixed(1)} kg
 • สถานะวันนี้: เดินแล้ว $_todaySteps ก้าว (${distanceKm.toStringAsFixed(2)} กม. • เผาผลาญ ${caloriesKcal.toStringAsFixed(0)} kcal)
@@ -240,10 +332,8 @@ ${_brandEdition.developerCredit}
 ''';
   }
 
-  /// Initialize service
-  /// กฎสำคัญ: "เมื่อเปิดแอปพลิเคชันใหม่ ทุกอย่างเซตเป็น 0 ทั้งหมด"
+  /// Initialize service & restore 24-hour persisted steps
   Future<void> initialize() async {
-    // โหลดโหมดแบรนด์ (ChewaPulse xAI หรือ SciRBRU Move+AI)
     final brandIdx = await HealthStorageService.getBrandEditionIndex();
     _brandEdition = brandIdx == 1
         ? AppBrandEdition.sciRbruMoveAi
@@ -257,13 +347,40 @@ ${_brandEdition.developerCredit}
     _dailyWaterGoalMl = await HealthStorageService.getDailyWaterGoal();
     _isVoiceAlertEnabled = await HealthStorageService.getVoiceAlertEnabled();
 
+    // โหลดการตั้งค่าระบบนับก้าวอัตโนมัติ 24 ชม. และตารางเวลาของผู้ใช้
+    _isAutoTrackEnabled = await HealthStorageService.getAutoTrackEnabled();
+    _isAuto24HourMode = await HealthStorageService.getAuto24HourMode();
+    _autoStartHour = await HealthStorageService.getAutoStartHour();
+    _autoStartMinute = await HealthStorageService.getAutoStartMinute();
+    _autoEndHour = await HealthStorageService.getAutoEndHour();
+    _autoEndMinute = await HealthStorageService.getAutoEndMinute();
+
     VoiceAlertService().setVoiceEnabled(_isVoiceAlertEnabled);
 
     final profileData = await HealthStorageService.getUserProfileData();
     _profile = UserHealthProfile.fromJson(profileData);
 
-    // โหลดข้อมูลก้าวเดินย้อนหลัง 6 วันก่อนหน้า
     final now = DateTime.now();
+    _currentDateKey = HealthStorageService.dateKeyFor(now);
+
+    // โหลดข้อมูลก้าวเดินของวันนี้ที่บันทึกไว้ตลอด 24 ชม. (แม้ปิดแอปแล้วเปิดใหม่ ข้อมูลจะยังคงอยู่ครบถ้วน)
+    final savedTodaySteps = await HealthStorageService.getSavedStepsForDate(now);
+    final savedHourly = await HealthStorageService.getHourlyStepsForDate(now);
+    final savedActiveSec = await HealthStorageService.getActiveSecondsForDate(now);
+
+    if (savedTodaySteps > _todaySteps) {
+      _todaySteps = savedTodaySteps;
+    }
+    _hourlySteps.clear();
+    _hourlySteps.addAll(savedHourly);
+    if (_todaySteps > 0 && _hourlySteps.isEmpty) {
+      _hourlySteps[now.hour] = _todaySteps;
+    }
+    if (savedActiveSec > _activeSeconds) {
+      _activeSeconds = savedActiveSec;
+    }
+
+    // โหลดข้อมูลก้าวเดินย้อนหลัง 6 วันก่อนหน้า
     for (int i = 1; i <= 6; i++) {
       final d = now.subtract(Duration(days: i));
       final k = '${d.year}_${d.month}_${d.day}';
@@ -275,16 +392,8 @@ ${_brandEdition.developerCredit}
     _intervalRecords.clear();
     _intervalRecords.addAll(savedIntervals);
 
-    // เซตค่าตัวนับสดของรอบใหม่เป็น 0 ทั้งหมดตามคำสั่ง
-    _todaySteps = 0;
-    _activeSeconds = 0;
-    _motionIntensity = 0.0;
-    _cadenceSpm = 0;
-    _sedentarySeconds = 0;
-    _currentActivity = ActivityType.stationary;
-    _hourlySteps.clear();
-    _currentIntervalStartTime = DateTime.now();
-    _stepsAtIntervalStart = 0;
+    _currentIntervalStartTime = now;
+    _stepsAtIntervalStart = _todaySteps;
 
     // รันการวินิจฉัย AI รอบแรก
     _runAiIntervalAnalysis();
@@ -297,15 +406,99 @@ ${_brandEdition.developerCredit}
     _startMotionDecayTimer();
     _startCadenceAndSedentaryTimer();
     _startFourHourSnapshotTimer();
+    _startBackgroundSyncAndMidnightTimer();
+    await _syncNativeBackgroundService();
     notifyListeners();
+  }
+
+  /// เชื่อมต่อและสั่งการ Native Android Foreground Service ให้ทำงานเบื้องหลังตลอด 24 ชั่วโมงแม้ปิดแอป
+  Future<void> _syncNativeBackgroundService() async {
+    if (kIsWeb) return;
+    try {
+      final result = await _bgChannel.invokeMethod<Map<dynamic, dynamic>>(
+        'configureAndSyncBackgroundService',
+        {
+          'appName': _brandEdition.appName,
+          'autoTrackEnabled': _isAutoTrackEnabled,
+          'auto24HourMode': _isAuto24HourMode,
+          'startHour': _autoStartHour,
+          'startMinute': _autoStartMinute,
+          'endHour': _autoEndHour,
+          'endMinute': _autoEndMinute,
+          'dailyGoal': _dailyGoal,
+          'currentSteps': _todaySteps,
+        },
+      );
+      if (result != null) {
+        _isBackgroundServiceRunning = result['serviceRunning'] == true;
+        final int bgSteps = (result['todaySteps'] as num?)?.toInt() ?? 0;
+        if (bgSteps > _todaySteps) {
+          _todaySteps = bgSteps;
+          final savedHourly = await HealthStorageService.getHourlyStepsForDate(DateTime.now());
+          _hourlySteps.clear();
+          _hourlySteps.addAll(savedHourly);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      // ในสภาพแวดล้อม Flutter Test หรือแพลตฟอร์มที่ไม่ใช่ Android จะใช้ Dart Timer อัตโนมัติแทน
+      _isBackgroundServiceRunning = true;
+    }
+  }
+
+  /// ซิงค์ข้อมูลจาก Background Service และตรวจสอบการเปลี่ยนวันใหม่ (00:00 น.) ตลอด 24 ชั่วโมง
+  void _startBackgroundSyncAndMidnightTimer() {
+    _backgroundSyncTimer?.cancel();
+    _backgroundSyncTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      final now = DateTime.now();
+      final todayKey = HealthStorageService.dateKeyFor(now);
+
+      // 1. ตรวจสอบการข้ามเที่ยงคืน (00:00 น.) เพื่อเก็บข้อมูลวันเก่าและเริ่มนับวันใหม่อัตโนมัติ 24 ชม.
+      if (todayKey != _currentDateKey) {
+        _pastDaysSteps[_currentDateKey] = _todaySteps;
+        _currentDateKey = todayKey;
+        _todaySteps = 0;
+        _activeSeconds = 0;
+        _hourlySteps.clear();
+        _stepsAtIntervalStart = 0;
+        _currentIntervalStartTime = now;
+        await HealthStorageService.saveStepsForDate(now, 0);
+        notifyListeners();
+        return;
+      }
+
+      // 2. ดึงข้อมูลก้าวเดินที่ Native Background Service บันทึกไว้ขณะปิดหน้าจอหรือพับแอป
+      try {
+        final bgSteps = await HealthStorageService.getSavedStepsForDate(now);
+        if (bgSteps > _todaySteps) {
+          _todaySteps = bgSteps;
+          final savedHourly = await HealthStorageService.getHourlyStepsForDate(now);
+          _hourlySteps.clear();
+          _hourlySteps.addAll(savedHourly);
+          final savedActive = await HealthStorageService.getActiveSecondsForDate(now);
+          if (savedActive > _activeSeconds) {
+            _activeSeconds = savedActive;
+          }
+          _runAiIntervalAnalysis();
+          notifyListeners();
+        }
+      } catch (_) {}
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // เมื่อหยิบโทรศัพท์ออกจากกระเป๋ากางเกงหรือเปิดหน้าจอ ให้เชื่อมต่อสตรีมเซนเซอร์ซ้ำทันที
+      // เมื่อเปิดแอปกลับมาใหม่ ให้ดึงก้าวเดินที่สะสมระหว่างปิดแอปขึ้นมาแสดงทันที
+      _syncNativeBackgroundService();
       _startSensorListener();
       _initPedometer();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      // บันทึกข้อมูลล่าสุดลงฐานข้อมูลทันทีเมื่อพับแอปหรือปิดแอป
+      final now = DateTime.now();
+      HealthStorageService.saveStepsForDate(now, _todaySteps);
+      HealthStorageService.saveActiveSecondsForDate(now, _activeSeconds);
+      _syncNativeBackgroundService();
     }
   }
 
@@ -344,7 +537,7 @@ ${_brandEdition.developerCredit}
     final int hwDiff = event.steps - _lastHardwareStepCount!;
     _lastHardwareStepCount = event.steps;
 
-    if (hwDiff > 0) {
+    if (hwDiff > 0 && isWithinScheduledWindow()) {
       // ชดเชยก้าวที่ชิป Pedometer นับได้ในกระเป๋ากางเกง/ขณะปิดหน้าจอ โดยไม่นับซ้ำกับ Accelerometer
       final int missedPocketSteps = hwDiff - _accelStepsSinceLastHardwareSync;
       _accelStepsSinceLastHardwareSync = 0;
@@ -419,6 +612,12 @@ ${_brandEdition.developerCredit}
       notifyListeners();
     }
 
+    // ตรวจสอบว่าอยู่ในช่วงเวลาทำงานอัตโนมัติ (24 ชม. หรือตามเวลาที่ผู้ใช้กำหนด)
+    if (!isWithinScheduledWindow()) {
+      _lastMagnitude = magnitude;
+      return;
+    }
+
     // Dynamic peak detection with refractory window
     if (magnitude > _stepThreshold && _lastMagnitude <= _stepThreshold) {
       if (nowMs - _lastStepTimestampMs > _refractoryPeriodMs) {
@@ -431,6 +630,16 @@ ${_brandEdition.developerCredit}
   }
 
   void _onStepDetected(int nowMs, double magnitude, {bool fromHardwarePedometer = false}) {
+    final now = DateTime.now();
+    final todayKey = HealthStorageService.dateKeyFor(now);
+    if (todayKey != _currentDateKey) {
+      _pastDaysSteps[_currentDateKey] = _todaySteps;
+      _currentDateKey = todayKey;
+      _todaySteps = 0;
+      _activeSeconds = 0;
+      _hourlySteps.clear();
+    }
+
     _todaySteps++;
     if (!fromHardwarePedometer) {
       _accelStepsSinceLastHardwareSync++;
@@ -443,13 +652,16 @@ ${_brandEdition.developerCredit}
     _recentStepTimestamps.add(nowMs);
     _calculateCadence(nowMs);
 
-    // Record into current hour
-    final currentHour = DateTime.now().hour;
-    _hourlySteps[currentHour] = (_hourlySteps[currentHour] ?? 0) + 1;
+    // Record into current hour (0..23)
+    final currentHour = now.hour;
+    final updatedHourSteps = (_hourlySteps[currentHour] ?? 0) + 1;
+    _hourlySteps[currentHour] = updatedHourSteps;
 
-    // Save steps periodically
-    if (_todaySteps % 10 == 0) {
-      HealthStorageService.saveStepsForDate(DateTime.now(), _todaySteps);
+    // บันทึกลงฐานข้อมูลในเครื่องแบบ Real-time ทุกก้าว เพื่อให้ข้อมูลอยู่ครบตลอด 24 ชม. แม้ปิดแอปทันที
+    HealthStorageService.saveStepsForDate(now, _todaySteps);
+    HealthStorageService.saveHourlyStepsForDate(now, currentHour, updatedHourSteps);
+    if (_todaySteps % 5 == 0) {
+      HealthStorageService.saveActiveSecondsForDate(now, _activeSeconds);
     }
 
     notifyListeners();
@@ -510,13 +722,12 @@ ${_brandEdition.developerCredit}
         notifyListeners();
       }
 
-      if (_currentActivity == ActivityType.stationary) {
+      if (_currentActivity == ActivityType.stationary && isWithinScheduledWindow()) {
         _sedentarySeconds++;
 
         // ตรวจสอบเงื่อนไข 30 นาที (1,800 วินาที)
         final thresholdSec = _sedentaryAlertMinutes * 60;
         if (_sedentarySeconds == thresholdSec || (_sedentarySeconds > thresholdSec && _sedentarySeconds % 300 == 0)) {
-          // กระตุ้นเสียงพูดเตือนภาษาไทย "ลุกค่ะ ลุกค่ะ"
           VoiceAlertService().playSedentaryVoiceAlert();
           notifyListeners();
         } else if (_sedentarySeconds % 60 == 0) {
@@ -531,7 +742,6 @@ ${_brandEdition.developerCredit}
   /// บันทึกข้อมูลอัตโนมัติทุก 4 ชั่วโมง เพื่อนำข้อมูลมาวิเคราะห์
   void _startFourHourSnapshotTimer() {
     _fourHourSnapshotTimer?.cancel();
-    // ตรวจสอบทุก 4 ชั่วโมง (4 * 3600 วินาที)
     _fourHourSnapshotTimer = Timer.periodic(const Duration(hours: 4), (_) {
       captureAndSave4HourSnapshot();
     });
@@ -540,13 +750,12 @@ ${_brandEdition.developerCredit}
   /// ถ่ายสแน็ปช็อตข้อมูลรอบ 4 ชั่วโมง และวิเคราะห์ด้วยปัญญาประดิษฐ์
   Future<HealthIntervalRecord> captureAndSave4HourSnapshot() async {
     final now = DateTime.now();
-    final intervalSteps = _todaySteps - _stepsAtIntervalStart;
+    final intervalSteps = math.max(0, _todaySteps - _stepsAtIntervalStart);
     final speedMultiplier = _currentActivity == ActivityType.running ? 1.25 : 1.0;
     final intervalDistance = _profile.calculateDistanceKm(intervalSteps, speedMultiplier);
     final intervalCalories = (intervalSteps / 1000.0) * (_profile.weightKg * 0.55);
     final intervalHydration = _profile.calculateHydrationLossMl(intervalSteps, _motionIntensity);
 
-    // รันการวินิจฉัยด้วย Deep Learning Neural Engine
     final aiInference = DeepHealthAiEngine().analyze4HourInterval(
       steps4h: intervalSteps,
       meanCadence: _cadenceSpm > 0 ? _cadenceSpm : 92,
@@ -576,7 +785,6 @@ ${_brandEdition.developerCredit}
     _intervalRecords.insert(0, record);
     await HealthStorageService.saveIntervalRecord(record);
 
-    // อัปเดตจุดเริ่มของรอบถัดไป
     _currentIntervalStartTime = now;
     _stepsAtIntervalStart = _todaySteps;
 
@@ -665,6 +873,7 @@ ${_brandEdition.developerCredit}
     await HealthStorageService.setSedentaryAlertMinutes(_sedentaryAlertMinutes);
     await HealthStorageService.setDailyWaterGoal(_dailyWaterGoalMl);
     await HealthStorageService.setVoiceAlertEnabled(_isVoiceAlertEnabled);
+    await _syncNativeBackgroundService();
 
     notifyListeners();
   }
@@ -697,6 +906,7 @@ ${_brandEdition.developerCredit}
 
   /// รีเซตข้อมูลทั้งหมดเป็น 0 (Reset All to 0)
   void resetAllToZero() {
+    final now = DateTime.now();
     _todaySteps = 0;
     _activeSeconds = 0;
     _motionIntensity = 0.0;
@@ -705,11 +915,18 @@ ${_brandEdition.developerCredit}
     _currentActivity = ActivityType.stationary;
     _hourlySteps.clear();
     _stepsAtIntervalStart = 0;
-    _currentIntervalStartTime = DateTime.now();
+    _currentIntervalStartTime = now;
     _lastHardwareStepCount = null;
     _accelStepsSinceLastHardwareSync = 0;
     _isFallWarningActive = false;
-    HealthStorageService.saveStepsForDate(DateTime.now(), 0);
+    HealthStorageService.saveStepsForDate(now, 0);
+    HealthStorageService.clearHourlyStepsForDate(now);
+    HealthStorageService.saveActiveSecondsForDate(now, 0);
+    if (!kIsWeb) {
+      try {
+        _bgChannel.invokeMethod('resetBackgroundSteps');
+      } catch (_) {}
+    }
     GpsTrackingService.instance.clearRoute();
     _runAiIntervalAnalysis();
     notifyListeners();
@@ -726,6 +943,7 @@ ${_brandEdition.developerCredit}
     _decayTimer?.cancel();
     _cadenceAndSedentaryTimer?.cancel();
     _fourHourSnapshotTimer?.cancel();
+    _backgroundSyncTimer?.cancel();
     super.dispose();
   }
 }
