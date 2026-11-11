@@ -14,7 +14,6 @@ class DeepAiAnalyticsCard extends StatefulWidget {
 
 class _DeepAiAnalyticsCardState extends State<DeepAiAnalyticsCard> {
   bool _isTraining = false;
-  DeepTrainingResult? _latestResult;
 
   Future<void> _handleRetrain() async {
     setState(() => _isTraining = true);
@@ -22,7 +21,6 @@ class _DeepAiAnalyticsCardState extends State<DeepAiAnalyticsCard> {
     await Future.delayed(const Duration(milliseconds: 400));
     final res = await widget.sensor.retrainAiModel(epochs: 16);
     setState(() {
-      _latestResult = res;
       _isTraining = false;
     });
 

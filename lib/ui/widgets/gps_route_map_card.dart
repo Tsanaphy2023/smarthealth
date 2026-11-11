@@ -640,7 +640,8 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
         );
       }).toList(),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        constraints: const BoxConstraints(maxWidth: 115),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.06),
           borderRadius: BorderRadius.circular(10),
@@ -659,12 +660,16 @@ class _GpsRouteMapCardState extends State<GpsRouteMapCard>
               size: 14,
             ),
             const SizedBox(width: 4),
-            Text(
-              gps.activityMode.label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+            Flexible(
+              child: Text(
+                gps.activityMode.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(width: 2),

@@ -129,9 +129,9 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
                   labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                   labelStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
                   tabs: const [
-                    Tab(text: 'เป้าหมายรายวัน'),
-                    Tab(text: 'ลดน้ำหนัก'),
-                    Tab(text: 'ระบบเตือนขยับ'),
+                    Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('เป้าหมายรายวัน'))),
+                    Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('ลดน้ำหนัก'))),
+                    Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('ระบบเตือนขยับ'))),
                   ],
                 ),
               ),
@@ -155,44 +155,61 @@ class _ComprehensiveGoalsDialogState extends State<ComprehensiveGoalsDialog>
               // Bottom Buttons
               Row(
                 children: [
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      foregroundColor: HealthTheme.orangeCalorie,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  Flexible(
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: HealthTheme.orangeCalorie,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.restart_alt, size: 15),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('รีเซต 0', style: TextStyle(fontSize: 11.5)),
+                      ),
+                      onPressed: () {
+                        widget.sensor.resetAllToZero();
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('รีเซตสถิติทุกอย่างเป็น 0 เรียบร้อยแล้ว')),
+                        );
+                      },
                     ),
-                    icon: const Icon(Icons.restart_alt, size: 16),
-                    label: const Text('รีเซต 0', style: TextStyle(fontSize: 11.5)),
-                    onPressed: () {
-                      widget.sensor.resetAllToZero();
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('รีเซตสถิติทุกอย่างเป็น 0 เรียบร้อยแล้ว')),
-                      );
-                    },
                   ),
-                  const Spacer(),
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      side: const BorderSide(color: Colors.white24),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        minimumSize: Size.zero,
+                        side: const BorderSide(color: Colors.white24),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('ยกเลิก', style: TextStyle(fontSize: 12)),
+                      ),
                     ),
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('ยกเลิก', style: TextStyle(fontSize: 12)),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: HealthTheme.cyanPrimary,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: HealthTheme.cyanPrimary,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        minimumSize: Size.zero,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: _saveSettings,
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('บันทึก', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
                     ),
-                    onPressed: _saveSettings,
-                    child: const Text('บันทึก', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

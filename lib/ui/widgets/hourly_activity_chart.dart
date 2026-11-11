@@ -91,11 +91,11 @@ class HourlyActivityChart extends StatelessWidget {
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('00:00', style: TextStyle(color: Colors.white38, fontSize: 10)),
-              Text('06:00', style: TextStyle(color: Colors.white38, fontSize: 10)),
-              Text('12:00', style: TextStyle(color: Colors.white38, fontSize: 10)),
-              Text('18:00', style: TextStyle(color: Colors.white38, fontSize: 10)),
-              Text('23:00', style: TextStyle(color: Colors.white38, fontSize: 10)),
+              Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text('00:00', style: TextStyle(color: Colors.white38, fontSize: 10)))),
+              Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text('06:00', style: TextStyle(color: Colors.white38, fontSize: 10)))),
+              Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text('12:00', style: TextStyle(color: Colors.white38, fontSize: 10)))),
+              Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text('18:00', style: TextStyle(color: Colors.white38, fontSize: 10)))),
+              Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text('23:00', style: TextStyle(color: Colors.white38, fontSize: 10)))),
             ],
           ),
         ],

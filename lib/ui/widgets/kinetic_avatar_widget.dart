@@ -138,18 +138,22 @@ class _KineticAvatarWidgetState extends State<KineticAvatarWidget>
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: themeColor.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        widget.activity.thaiLabel,
-                        style: TextStyle(
-                          color: themeColor,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: themeColor.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          widget.activity.thaiLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: themeColor,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -175,20 +179,23 @@ class _KineticAvatarWidgetState extends State<KineticAvatarWidget>
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerRight,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.speed, color: themeColor, size: 13),
-                            const SizedBox(width: 3),
-                            Text(
-                              widget.cadenceSpm > 0 ? '${widget.cadenceSpm} SPM' : '0 SPM',
-                              style: TextStyle(
-                                color: themeColor,
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w800,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.speed, color: themeColor, size: 13),
+                              const SizedBox(width: 3),
+                              Text(
+                                widget.cadenceSpm > 0 ? '${widget.cadenceSpm} SPM' : '0 SPM',
+                                style: TextStyle(
+                                  color: themeColor,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),

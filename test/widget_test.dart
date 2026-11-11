@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_health_tracker/main.dart';
@@ -55,16 +56,63 @@ void main() {
       expect(metric.isAerobicRunning, isFalse);
     });
 
-    test('MovementSensorService manual steps and goals', () {
+    test('MovementSensorService manual steps, sedentary alert, and goals', () {
       final service = MovementSensorService();
       final initialSteps = service.todaySteps;
       service.addManualStep();
       expect(service.todaySteps, equals(initialSteps + 1));
       expect(service.currentActivity, equals(ActivityType.walking));
+
+      // Verify 30-minute sedentary alert trigger demo
+      service.triggerSedentaryAlertDemo();
+      expect(service.sedentaryMinutes, greaterThanOrEqualTo(service.sedentaryAlertMinutes));
+      expect(service.needsActiveBreak, isTrue);
+
+      service.dismissActiveBreak();
+      expect(service.needsActiveBreak, isFalse);
+    });
+
+    test('GpsTrackingService layer modes and simulation route tracking', () {
+      final gps = GpsTrackingService();
+      expect(gps.mapLayerMode, equals(GpsMapLayerMode.satellite));
+      gps.cycleMapLayerMode();
+      expect(gps.mapLayerMode, equals(GpsMapLayerMode.street));
+      gps.cycleMapLayerMode();
+      expect(gps.mapLayerMode, equals(GpsMapLayerMode.cyberGrid));
+      gps.cycleMapLayerMode();
+      expect(gps.mapLayerMode, equals(GpsMapLayerMode.satellite));
     });
   });
 
-  testWidgets('SmartHealthTrackerApp boots and renders responsive layout', (WidgetTester tester) async {
+  testWidgets('SmartHealthTrackerApp renders without overflow across 320dp, 360dp, 768dp, and 1280dp viewports',
+      (WidgetTester tester) async {
+    final viewports = [
+      const Size(320, 640), // Small mobile phone
+      const Size(360, 800), // Standard Android phone
+      const Size(768, 1024), // Tablet Portrait (Medium layout)
+      const Size(1280, 900), // Web / Desktop (Expanded 3-column layout)
+    ];
+
+    for (final size in viewports) {
+      await tester.binding.setSurfaceSize(size);
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => MovementSensorService()),
+            ChangeNotifierProvider(create: (_) => GpsTrackingService()),
+          ],
+          child: const SmartHealthTrackerApp(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.byType(SmartHealthTrackerApp), findsOneWidget);
+      expect(find.textContaining('SMART HEALTH TRACKER'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'No layout overflow at viewport $size');
+    }
+
+    // Test opening ComprehensiveGoalsDialog on narrow 320x640 viewport
+    await tester.binding.setSurfaceSize(const Size(320, 640));
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -74,8 +122,24 @@ void main() {
         child: const SmartHealthTrackerApp(),
       ),
     );
+    await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.byType(SmartHealthTrackerApp), findsOneWidget);
-    expect(find.textContaining('HEALTH'), findsWidgets);
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('ตั้งค่าเป้าหมายสุขภาพ'), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'No overflow in ComprehensiveGoalsDialog tab 1');
+
+    await tester.tap(find.text('ลดน้ำหนัก'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull, reason: 'No overflow in ComprehensiveGoalsDialog tab 2');
+
+    await tester.tap(find.text('ระบบเตือนขยับ'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull, reason: 'No overflow in ComprehensiveGoalsDialog tab 3');
+
+    await tester.binding.setSurfaceSize(null);
   });
 }

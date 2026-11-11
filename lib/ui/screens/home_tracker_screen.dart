@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/activity_type.dart';
-import '../../models/health_interval_record.dart';
 import '../../services/movement_sensor_service.dart';
 import '../../services/gps_tracking_service.dart';
 import '../theme/health_theme.dart';
@@ -586,7 +585,15 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('ข้อมูลสรีรวิทยา & เป้าหมาย', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+              const Flexible(
+                child: Text(
+                  'ข้อมูลสรีรวิทยา & เป้าหมาย',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+              const SizedBox(width: 8),
               TextButton(
                 onPressed: _openProfileDialog,
                 style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(40, 24)),
@@ -596,11 +603,12 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
           ),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _profileMiniItem('BMI', p.bmi.toStringAsFixed(1), HealthTheme.emeraldStep),
-              _profileMiniItem('เป้าหมายน้ำหนัก', '${sensor.targetWeightKg.toStringAsFixed(0)} kg', HealthTheme.orangeCalorie),
-              _profileMiniItem('พร่องแคลอรี', '${sensor.targetCalorieDeficitKcal} kcal', HealthTheme.goldRBRU),
+              Expanded(child: _profileMiniItem('BMI', p.bmi.toStringAsFixed(1), HealthTheme.emeraldStep)),
+              const SizedBox(width: 6),
+              Expanded(child: _profileMiniItem('เป้าหมายน้ำหนัก', '${sensor.targetWeightKg.toStringAsFixed(0)} kg', HealthTheme.orangeCalorie)),
+              const SizedBox(width: 6),
+              Expanded(child: _profileMiniItem('พร่องแคลอรี', '${sensor.targetCalorieDeficitKcal} kcal', HealthTheme.goldRBRU)),
             ],
           ),
         ],
@@ -611,9 +619,15 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
   Widget _profileMiniItem(String title, String val, Color color) {
     return Column(
       children: [
-        Text(title, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(title, maxLines: 1, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+        ),
         const SizedBox(height: 2),
-        Text(val, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(val, maxLines: 1, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)),
+        ),
       ],
     );
   }
@@ -684,11 +698,11 @@ class _HomeTrackerScreenState extends State<HomeTrackerScreen> {
               ),
               onPressed: () => sensor.triggerSedentaryAlertDemo(),
               icon: const Icon(Icons.record_voice_over_rounded, size: 18),
-              label: Flexible(
+              label: FittedBox(
+                fit: BoxFit.scaleDown,
                 child: Text(
                   '🔊 ทดสอบเสียงเตือน 30 นาที: "ลุกคะ ลุกค่ะ!" (นิ่ง ${sensor.sedentaryMinutes}/${sensor.sedentaryAlertMinutes} นาที)',
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
                 ),
               ),
